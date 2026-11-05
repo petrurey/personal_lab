@@ -7,7 +7,7 @@
   <meta name="description" content="Choose Plans, Labs or Info to explore your personal learning workspace.">
   <title>Personal Lab | Your workspace</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/dashboard.css?v=2">
+  <link rel="stylesheet" href="assets/dashboard.css?v=3">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -15,24 +15,55 @@
     <a class="brand" href="./" aria-label="Personal Lab home"><span class="brand-mark" aria-hidden="true">pl.</span><span>Personal Lab<span class="brand-caption">LEARN. BUILD. UNDERSTAND.</span></span></a>
     <nav class="top-nav" aria-label="Main navigation"><a href="plans/">Plans</a><a href="labs/">Labs</a><a href="info/">Info</a></nav>
   </header>
-  <main id="main" class="page">
-    <header class="workspace-heading"><span class="eyebrow">MY LEARNING WORKSPACE</span><h1>Your workspace.</h1><p>Choose where you want to go.</p></header>
-    <nav class="category-menu" aria-label="Workspace categories">
-      <a class="category-link plans" href="plans/">
-        <div class="category-heading"><span class="category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h13v16H4V7m3-4v7h7M9 14h7m-7 3h4"/></svg></span><span class="category-number">01</span></div>
-        <h2>Plans</h2><p>Direction, with intention.</p><span class="category-action">Explore plans <span aria-hidden="true">&#8594;</span></span>
-      </a>
-      <a class="category-link labs" href="labs/">
-        <div class="category-heading"><span class="category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 3h6m-5 0v7L4 20h16l-6-10V3M7 15h10m-7 2h.01m3 1h.01"/></svg></span><span class="category-number">02</span></div>
-        <h2>Labs</h2><p>Less theory. More doing.</p><span class="category-action">Explore labs <span aria-hidden="true">&#8594;</span></span>
-      </a>
-      <a class="category-link info" href="info/">
-        <div class="category-heading"><span class="category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-3H4zm16 0h-4a3 3 0 0 0-3 3m7-3v14h-3a4 4 0 0 0-4 3"/></svg></span><span class="category-number">03</span></div>
-        <h2>Info</h2><p>A reference, not a rabbit hole.</p><span class="category-action">Explore info <span aria-hidden="true">&#8594;</span></span>
-      </a>
-    </nav>
-    <aside class="workspace-note"><span class="note-symbol" aria-hidden="true">+</span><div><strong>Small steps. Real progress.</strong><p>Lab notes and study progress stay in the browser you use; they are not synced to GitHub.</p></div><span class="note-label">PERSONAL, BY DESIGN</span></aside>
+  <main id="main" class="page index-page">
+    <h1 class="sr-only">Personal Lab categories</h1>
+    <div class="category-menu">
+      <section class="category-column plans" aria-labelledby="plans-heading">
+        <a class="category-link" href="plans/">
+          <span class="category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h13v16H4V7m3-4v7h7M9 14h7m-7 3h4"/></svg></span>
+          <h2 id="plans-heading">Plans</h2><span class="category-arrow" aria-hidden="true">&#8594;</span>
+        </a>
+        <div class="category-scroll" role="region" aria-label="Plans pages" tabindex="0">
+          <ul class="category-pages">
+            <li><a class="resource-card" href="plans/development-plan.html" data-resource>
+              <div class="card-top"><span class="resource-type">LEARNING ROADMAP</span><span aria-hidden="true">&#8599;</span></div>
+              <h3>Identity development plan</h3><p>A focused SC-300 roadmap, from identity foundations to exam readiness.</p>
+              <div class="card-tags"><span>SC-300</span><span>6 milestones</span></div><div class="card-footer">Open plan <span aria-hidden="true">&#8594;</span></div>
+            </a></li>
+          </ul>
+        </div>
+      </section>
+      <section class="category-column labs" aria-labelledby="labs-heading">
+        <a class="category-link" href="labs/">
+          <span class="category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 3h6m-5 0v7L4 20h16l-6-10V3M7 15h10m-7 2h.01m3 1h.01"/></svg></span>
+          <h2 id="labs-heading">Labs</h2><span class="category-arrow" aria-hidden="true">&#8594;</span>
+        </a>
+        <div class="category-scroll" role="region" aria-label="Labs pages" tabindex="0">
+          <ul class="category-pages">
+            <li><a class="resource-card" href="labs/pim-lab.html" data-resource>
+              <div class="card-top"><span class="resource-type">HANDS-ON FIELD LAB</span><span aria-hidden="true">&#8599;</span></div>
+              <h3>Privileged Identity Management</h3><p>Get hands-on with Entra PIM, just-in-time access and privileged role workflows.</p>
+              <div class="card-tags"><span>Microsoft Entra</span><span>PowerShell</span></div><div class="card-footer">Enter the lab <span aria-hidden="true">&#8594;</span></div>
+            </a></li>
+          </ul>
+        </div>
+      </section>
+      <section class="category-column info" aria-labelledby="info-heading">
+        <a class="category-link" href="info/">
+          <span class="category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-3H4zm16 0h-4a3 3 0 0 0-3 3m7-3v14h-3a4 4 0 0 0-4 3"/></svg></span>
+          <h2 id="info-heading">Info</h2><span class="category-arrow" aria-hidden="true">&#8594;</span>
+        </a>
+        <div class="category-scroll" role="region" aria-label="Info pages" tabindex="0">
+          <ul class="category-pages">
+            <li><a class="resource-card" href="info/entra-roles.html" data-resource>
+              <div class="card-top"><span class="resource-type">INTERACTIVE REFERENCE</span><span aria-hidden="true">&#8599;</span></div>
+              <h3>Entra roles, mapped out</h3><p>Explore built-in roles, their privilege levels and where they fit in the bigger picture.</p>
+              <div class="card-tags"><span>Role directory</span><span>Permissions</span></div><div class="card-footer">Explore roles <span aria-hidden="true">&#8594;</span></div>
+            </a></li>
+          </ul>
+        </div>
+      </section>
+    </div>
   </main>
-  <footer class="site-footer"><span><strong>personal lab.</strong> A place for what I'm learning.</span></footer>
 </body>
 </html>

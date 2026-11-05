@@ -13,11 +13,19 @@ const resources = ["plans/development-plan.html", "labs/pim-lab.html", "info/ent
 const categories = ["plans", "labs", "info"];
 const pages = ["index.html", ...categories.map(category => `${category}/index.html`), ...resources];
 
-test("landing page has prominent category links without a banner or resource cards", async () => {
+test("landing page has compact category headings and isolated scrollable page lists", async () => {
   const html = await read("index.html");
   for (const category of categories) assert.ok(html.includes(`href="${category}/"`));
-  assert.equal((html.match(/class="category-link /g) || []).length, 3);
-  assert.doesNotMatch(html, /class="hero|data-resource|Continue my development plan|STAY CURIOUS|keep <em>growing/);
+  assert.equal((html.match(/class="category-link"/g) || []).length, 3);
+  assert.equal((html.match(/class="category-scroll" role="region" aria-label="[^"]+ pages" tabindex="0"/g) || []).length, 3);
+  for (const [index, category] of categories.entries()) {
+    const column = html.match(new RegExp(`<section class="category-column ${category}"[\\s\\S]*?</section>`))?.[0];
+    assert.ok(column, `Missing ${category} column`);
+    assert.ok(column.includes(`href="${resources[index]}"`));
+    assert.equal((column.match(/data-resource/g) || []).length, 1);
+    for (const other of resources.filter((_, position) => position !== index)) assert.ok(!column.includes(other));
+  }
+  assert.doesNotMatch(html, /class="hero|workspace-heading|workspace-note|site-footer|Your workspace\.|Choose where|Small steps|A place for what/);
 });
 
 test("category pages contain only their own cards and mark current navigation", async () => {
