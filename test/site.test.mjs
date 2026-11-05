@@ -9,13 +9,35 @@ import { once } from "node:events";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = file => readFile(resolve(root, file), "utf8");
-const pages = ["index.html", "plans/development-plan.html", "labs/pim-lab.html", "info/entra-roles.html"];
+const resources = ["plans/development-plan.html", "labs/pim-lab.html", "info/entra-roles.html"];
+const categories = ["plans", "labs", "info"];
+const pages = ["index.html", ...categories.map(category => `${category}/index.html`), ...resources];
 
-test("landing page has all three sections and correct resource destinations", async () => {
+test("landing page has prominent category links without a banner or resource cards", async () => {
   const html = await read("index.html");
-  for (const id of ["plans", "labs", "info"]) assert.match(html, new RegExp(`id="${id}"`));
-  for (const page of pages.slice(1)) assert.ok(html.includes(`href="${page}"`));
-  assert.equal((html.match(/data-resource /g) || []).length, 3);
+  for (const category of categories) assert.ok(html.includes(`href="${category}/"`));
+  assert.equal((html.match(/class="category-link /g) || []).length, 3);
+  assert.doesNotMatch(html, /class="hero|data-resource|Continue my development plan|STAY CURIOUS|keep <em>growing/);
+});
+
+test("category pages contain only their own cards and mark current navigation", async () => {
+  for (const [index, category] of categories.entries()) {
+    const html = await read(`${category}/index.html`);
+    assert.equal((html.match(/data-resource /g) || []).length, 1);
+    assert.ok(html.includes(`href="${resources[index].split("/")[1]}"`));
+    assert.ok(html.includes(`href="../${category}/" aria-current="page"`));
+    for (const other of resources.filter((_, position) => position !== index)) {
+      assert.ok(!html.includes(other.split("/")[1]), `${category} contains a card from another category`);
+    }
+  }
+});
+
+test("resource navigation returns to category pages instead of homepage fragments", async () => {
+  for (const file of ["assets/resource-nav.js", "plans/development-plan.html"]) {
+    const content = await read(file);
+    for (const category of categories) assert.ok(content.includes(`href="../${category}/"`));
+    assert.doesNotMatch(content, /index\.html#(?:plans|labs|info)/);
+  }
 });
 
 test("every local HTML asset and page link resolves, including fragments", async () => {
@@ -36,7 +58,7 @@ test("every local HTML asset and page link resolves, including fragments", async
 });
 
 test("imported pages retain original controls and gain dashboard navigation", async () => {
-  for (const page of pages.slice(2)) assert.match(await read(page), /src="\.\.\/assets\/resource-nav\.js"/);
+  for (const page of resources.slice(1)) assert.match(await read(page), /src="\.\.\/assets\/resource-nav\.js"/);
   const lab = await read("labs/pim-lab.html");
   assert.match(lab, /data-complete=/);
   assert.match(lab, /data-file=/);

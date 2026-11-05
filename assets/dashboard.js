@@ -1,10 +1,5 @@
 "use strict";
 
-const date = document.getElementById("today");
-date.dateTime = new Date().toLocaleDateString("en-CA");
-date.textContent = new Intl.DateTimeFormat("en", { weekday: "short", day: "numeric", month: "short", year: "numeric" }).format(new Date());
-date.hidden = false;
-
 const search = document.getElementById("resource-search");
 const cards = [...document.querySelectorAll("[data-resource]")];
 const status = document.getElementById("search-status");

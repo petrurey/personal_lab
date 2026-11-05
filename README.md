@@ -6,7 +6,7 @@ A dependency-free personal dashboard with three sections:
 - **Labs:** the original PIM field lab, including its interactive controls and downloadable scripts.
 - **Info:** the original interactive Microsoft Entra built-in roles reference.
 
-The imported reference pages include floating navigation back to the dashboard. All site links are relative and work under a GitHub Pages repository path.
+The landing page presents three prominent category buttons, without a banner or resource cards. Each opens a dedicated category page (`plans/`, `labs/` or `info/`) showing only that category's searchable cards. Header navigation and the imported pages' floating navigation link directly to these category pages. All site links are relative and work under a GitHub Pages repository path.
 
 ## Run locally
 

@@ -14,6 +14,6 @@
       @media print{:host{display:none}}
       @media(max-width:420px){:host{bottom:8px;left:8px}a{padding:6px 8px}nav{font-size:11px}}
     </style>
-    <nav aria-label="Personal Lab"><a href="../index.html">Personal Lab</a><a href="../index.html#plans">Plans</a><a href="../index.html#labs">Labs</a><a href="../index.html#info">Info</a></nav>`;
+    <nav aria-label="Personal Lab"><a href="../index.html">Personal Lab</a><a href="../plans/">Plans</a><a href="../labs/">Labs</a><a href="../info/">Info</a></nav>`;
   document.body.append(host);
 }
