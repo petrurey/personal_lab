@@ -14,7 +14,7 @@ for (const [input, output] of [
 ]) {
   const original = await readFile(resolve(source, input), "utf8");
   if (!original.includes("</body>")) throw new Error(`Missing closing body: ${input}`);
-  const imported = original.replace("</body>", '<script src="../assets/resource-nav.js" defer></script>\n</body>');
+  const imported = original.replace("</body>", '<script src="../assets/resource-nav.js?v=2" defer></script>\n</body>');
   await writeFile(resolve(root, output), imported);
   console.log(`Imported ${output}; original content retained with dashboard navigation.`);
 }

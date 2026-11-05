@@ -46,7 +46,8 @@ test("every local HTML asset and page link resolves, including fragments", async
     for (const match of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
       const link = match[1];
       if (/^(https?:|data:|mailto:)/.test(link) || link.includes("${")) continue;
-      const [path, fragment] = link.split("#");
+      const [target, fragment] = link.split("#");
+      const path = target.split("?")[0];
       let destination = path ? resolve(dirname(resolve(root, page)), path) : resolve(root, page);
       if (path.endsWith("/")) destination = resolve(destination, "index.html");
       const content = await readFile(destination, "utf8");
@@ -58,7 +59,7 @@ test("every local HTML asset and page link resolves, including fragments", async
 });
 
 test("imported pages retain original controls and gain dashboard navigation", async () => {
-  for (const page of resources.slice(1)) assert.match(await read(page), /src="\.\.\/assets\/resource-nav\.js"/);
+  for (const page of resources.slice(1)) assert.match(await read(page), /src="\.\.\/assets\/resource-nav\.js\?v=2"/);
   const lab = await read("labs/pim-lab.html");
   assert.match(lab, /data-complete=/);
   assert.match(lab, /data-file=/);
