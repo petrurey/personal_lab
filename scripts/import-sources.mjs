@@ -19,14 +19,5 @@ for (const [input, output] of [
   console.log(`Imported ${output}; original content retained with dashboard navigation.`);
 }
 const originalPlanPath = resolve(source, "identity-development-plan.html");
-const plan = await readFile(originalPlanPath, "utf8");
-const start = plan.indexOf('    const learnModule = ');
-const end = plan.indexOf('    const escapeHTML = ', start);
-if (start < 0 || end < 0) throw new Error("Cannot locate the public study roadmap in the original plan.");
-const publicData = plan.slice(start, end);
-if (/eng\.ms|sharepoint\.com|teams\.microsoft|learningplayer|esxp|deliveryRecords|const offerings/.test(publicData)) {
-  throw new Error("The study data contains non-public content; import stopped.");
-}
-await writeFile(resolve(root, "assets", "study-data.js"), `"use strict";\n${publicData}`);
 await copyFile(originalPlanPath, resolve(root, ".private", "identity-development-plan.html"));
-console.log("Extracted public study roadmap. Full original saved in .private (excluded from Git and deployment).");
+console.log("Full original saved unchanged in .private (excluded from Git and deployment). No replacement roadmap generated.");

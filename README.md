@@ -2,7 +2,7 @@
 
 A dependency-free personal dashboard with three sections:
 
-- **Plans:** the public study portion of the existing identity development plan, with six milestones and 25 browser-saved checkpoints.
+- **Plans:** the full, unchanged original identity development plan when running locally. The public website shows local-access instructions instead of a replacement roadmap.
 - **Labs:** the original PIM field lab, including its interactive controls and downloadable scripts.
 - **Info:** the original interactive Microsoft Entra built-in roles reference.
 
@@ -21,9 +21,11 @@ Open http://127.0.0.1:4173. Stop the server with Ctrl+C.
 
 ## Original development plan and privacy
 
-The full, unchanged development plan is preserved at `.private/identity-development-plan.html` on this computer. Open that file directly to use the original work portfolio. It is intentionally excluded from Git, the preview server, and the deployment artifact because it contains internal organizational resource links and work records.
+The original is `identity-development-plan.html` in your home folder (`C:\Users\petrurey\identity-development-plan.html` on this computer). With `npm start` running, the plan cards open `/plans/development-plan.html`, which serves that original file byte-for-byte, with no added markup, styles or navigation. You can also open the original file directly. To use a different source path, set the `IDENTITY_PLAN_PATH` environment variable before starting the server.
 
-The hosted plan includes only the original public SC-300 study stages, learning modules and target dates. No internal delivery records or internal links are published. Browser-stored progress from the original plan is not migrated. Neither study progress nor lab notes sync across devices or back to GitHub. Avoid entering sensitive information in browser notes; the website is public.
+A backup remains at `.private/identity-development-plan.html`, excluded from Git and deployment. The local server only exposes the original at its designated plan route, not the `.private` folder, and binds exclusively to `127.0.0.1`. It reports an explicit error if the source is missing; it never substitutes a different plan.
+
+The hosted plan page contains instructions for opening the local original. It does not publish internal work records or organization-only links, and does not display a rewritten study roadmap. GitHub Pages cannot open a file on your computer. Browser storage from a `file:` URL is separate from localhost storage; existing progress is not automatically migrated. Neither study progress nor lab notes sync across devices or back to GitHub.
 
 ## Refresh imports
 
@@ -34,7 +36,7 @@ npm run import
 npm test
 ```
 
-Or specify the source folder with `npm run import -- "C:\path\to\sources"`. The importer expects `pim-lab/pim_lab.html`, `entra-roles.html` and `identity-development-plan.html`. Refreshing overwrites the imported copies, not the originals. The public plan deliberately uses its own progress storage key.
+Or specify the source folder with `npm run import -- "C:\path\to\sources"`. The importer expects `pim-lab/pim_lab.html`, `entra-roles.html` and `identity-development-plan.html`. Refreshing overwrites the imported copies and private backup, not the originals. The importer does not rewrite or publish the development plan.
 
 ## Publish on GitHub Pages
 

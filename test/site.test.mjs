@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, mkdtemp, writeFile, rm, rmdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { resolve, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
@@ -78,13 +79,12 @@ test("imported pages retain original controls and gain dashboard navigation", as
   assert.match(roles, /type="search"/);
 });
 
-test("public roadmap retains six stages and exactly 25 distinct study items", async () => {
-  const context = vm.createContext({});
-  vm.runInContext(`${await read("assets/study-data.js")}\nglobalThis.result = {stages, studyItems};`, context);
-  assert.equal(context.result.stages.length, 6);
-  assert.equal(context.result.studyItems.length, 25);
-  assert.equal(new Set(context.result.studyItems.map(item => item.key)).size, 25);
-  for (const item of context.result.studyItems) assert.match(item.url, /^https:\/\/learn\.microsoft\.com\//);
+test("hosted plan explains local-only original access without a replacement roadmap", async () => {
+  const html = await read("plans/development-plan.html");
+  assert.match(html, /http:\/\/127\.0\.0\.1:4173\/plans\/development-plan\.html/);
+  assert.match(html, /Unchanged content\. Available locally\./);
+  assert.doesNotMatch(html, /study-data\.js|plan\.js|study-stages|study-progress/);
+  assert.ok(!(await readdir(resolve(root, "assets"))).includes("study-data.js"));
 });
 
 test("published files exclude internal resources and active credentials", async () => {
@@ -109,10 +109,14 @@ test("all shipped JavaScript parses without a build step", async () => {
   }
 });
 
-test("preview serves public resources but never private originals or repository files", async () => {
+test("preview serves the exact original plan only at its designated route and blocks private paths", async () => {
+  const directory = await mkdtemp(resolve(tmpdir(), "personal-lab-plan-"));
+  const originalPlan = resolve(directory, "original.html");
+  const originalBytes = Buffer.from("<!doctype html>\r\n<title>Original plan</title>\r\n<p>Unchanged content</p>\r\n");
+  await writeFile(originalPlan, originalBytes);
   const server = spawn(process.execPath, ["scripts/serve.mjs"], {
     cwd: root,
-    env: { ...process.env, PORT: "0" },
+    env: { ...process.env, PORT: "0", IDENTITY_PLAN_PATH: originalPlan },
     stdio: ["ignore", "pipe", "pipe"]
   });
   const failures = [];
@@ -125,13 +129,26 @@ test("preview serves public resources but never private originals or repository 
     const url = output.match(/http:\/\/127\.0\.0\.1:\d+/)?.[0];
     assert.ok(url, "Preview must report a usable URL.");
     for (const page of pages) assert.equal((await fetch(`${url}/${page}`)).status, 200, page);
+    const response = await fetch(`${url}/plans/development-plan.html`);
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), originalBytes);
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    const head = await fetch(`${url}/plans/development-plan.html`, { method: "HEAD" });
+    assert.equal(head.status, 200);
+    assert.equal(await head.text(), "");
+    assert.deepEqual(await readFile(originalPlan), originalBytes);
     for (const file of [".private/identity-development-plan.html", ".git/config", "package.json", "scripts/import-sources.mjs", "missing.html"]) {
       assert.equal((await fetch(`${url}/${file}`)).status, 404, file);
     }
     assert.equal(failures.length, 0);
+    await rm(originalPlan);
+    const missing = await fetch(`${url}/plans/development-plan.html`);
+    assert.equal(missing.status, 404);
+    assert.match(await missing.text(), /original identity-development-plan\.html could not be found/);
   } finally {
     const exited = once(server, "exit");
     server.kill();
     await exited;
+    await rm(originalPlan, { force: true });
+    await rmdir(directory);
   }
 });
