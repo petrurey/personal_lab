@@ -1,0 +1,1740 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Microsoft Entra PIM | Hands-on field lab</title>
+<style>
+[hidden]{display:none!important}
+:root{--bg:#f4f6fb;--paper:#fff;--ink:#17243a;--muted:#536379;--line:#dce3ed;--brand:#335bd6;--soft:#eef2ff;--warn:#fff5da;--warnink:#6b4900;--good:#e7f6ef;--goodink:#145139;--code:#101b2c;--codeink:#e0e9fa;--shadow:0 12px 35px #17243a08}
+html[data-theme=dark]{--bg:#0e1521;--paper:#162132;--ink:#e4ecf8;--muted:#a9b8cb;--line:#2c3b50;--brand:#91adff;--soft:#203256;--warn:#392e16;--warnink:#ffe1a0;--good:#173b30;--goodink:#a9e3cb;--code:#0b111c;--shadow:none}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}a{color:var(--brand);text-underline-offset:3px}button,input,textarea{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);padding:.45rem .8rem}button:hover{border-color:var(--brand)}button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible,textarea:focus-visible{outline:3px solid var(--brand);outline-offset:3px}.skip{position:absolute;left:1rem;top:-5rem;background:var(--paper);padding:1rem;z-index:10}.skip:focus{top:1rem}.layout{display:grid;grid-template-columns:285px minmax(0,1fr);max-width:1600px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;padding:28px 20px;border-right:1px solid var(--line);background:var(--paper)}.brand{font-weight:800;font-size:1.15rem;letter-spacing:-.03em}.brand small{display:block;color:var(--muted);font-size:.74rem;letter-spacing:.13em;text-transform:uppercase;margin-bottom:8px}.sidebar input[type=search]{width:100%;margin:18px 0 12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:9px}.sidebar nav a{display:block;text-decoration:none;color:var(--muted);font-size:.83rem;padding:6px 9px;border-radius:6px;line-height:1.45;margin:2px 0}.sidebar nav a:hover,.sidebar nav a.current{color:var(--brand);background:var(--soft)}.sidebar nav a.complete:before{content:"Done ";font-size:.65rem;color:var(--goodink);background:var(--good);padding:2px 4px;margin-right:5px;border-radius:3px}.sidebar progress{width:100%;height:8px;accent-color:var(--brand)}.progress-label{font-size:.8rem;color:var(--muted);margin:14px 0 3px}.tools{display:flex;flex-wrap:wrap;gap:6px;margin-top:18px}.tools button{font-size:.75rem}.privacy{font-size:.72rem;color:var(--muted);margin-top:14px}main{min-width:0;padding:40px 46px 80px;max-width:1250px}.hero{padding:36px;border-radius:18px;color:#fff;background:linear-gradient(125deg,#142443,#2448ac 75%,#4469d6);margin-bottom:26px}.eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.16em;font-weight:700;color:#c1d0ff}h1{font-size:clamp(2rem,4vw,3.2rem);line-height:1.12;letter-spacing:-.045em;margin:12px 0 18px}.hero p{max-width:760px;color:#e0e8ff}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{font-size:.72rem;border:1px solid #ffffff50;border-radius:30px;padding:4px 11px}.module,.intro{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:30px;margin:22px 0;box-shadow:var(--shadow)}.module[hidden]{display:none}.module-head{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:20px}.number{font-size:.72rem;font-weight:800;color:var(--brand);letter-spacing:.08em;text-transform:uppercase}h2{font-size:1.6rem;letter-spacing:-.025em;line-height:1.25;margin:5px 0 9px}h3{font-size:1.08rem;margin:26px 0 9px}h4{font-size:.95rem;margin:18px 0 8px}p{margin:10px 0 15px}.meta{font-size:.8rem;color:var(--muted)}.done{white-space:nowrap;font-size:.75rem;display:flex;gap:7px;align-items:center;margin-top:7px}.done input{accent-color:var(--brand);width:17px;height:17px}.callout{border-left:4px solid var(--brand);background:var(--soft);padding:14px 18px;border-radius:0 8px 8px 0;margin:18px 0}.warning{background:var(--warn);color:var(--warnink);border-color:#d99718}.check{background:var(--good);color:var(--goodink);border-color:#21946e}.callout p:last-child{margin-bottom:0}.route{font-size:.84rem;background:var(--bg);border:1px solid var(--line);padding:10px 13px;border-radius:8px;margin:12px 0 16px}.steps{padding-left:24px}.steps li{padding-left:5px;margin:10px 0}.steps li::marker{font-weight:750;color:var(--brand)}.table-wrap{overflow-x:auto;margin:15px 0}table{width:100%;border-collapse:collapse;font-size:.86rem}th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{background:var(--bg);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}code,kbd{font-family:Consolas,"Cascadia Code",monospace;font-size:.86em}p code,li code,td code{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:1px 5px;overflow-wrap:anywhere}.code-wrap{margin:14px 0 22px;min-width:0;border-radius:10px;overflow:hidden;border:1px solid var(--line)}.code-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 13px;background:var(--bg);font-size:.73rem;color:var(--muted)}.code-bar div{display:flex;gap:6px}.code-bar button{padding:3px 9px;font-size:.72rem}pre{margin:0;background:var(--code);color:var(--codeink);padding:20px;overflow:auto;tab-size:4;line-height:1.6;font-size:.83rem}pre code{font-size:inherit}details{border:1px solid var(--line);border-radius:9px;padding:12px 16px;margin:16px 0}summary{font-weight:650;cursor:pointer}.sources{font-size:.76rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;margin-top:22px}.sources a{margin-right:12px}.notes{width:100%;min-height:90px;resize:vertical;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg);color:var(--ink);font-size:.85rem}.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}.flow{display:flex;gap:7px;flex-wrap:wrap;align-items:center;font-size:.83rem;margin:18px 0}.flow span{padding:7px 12px;background:var(--soft);border:1px solid var(--line);border-radius:6px}.status{position:fixed;bottom:20px;right:20px;max-width:360px;background:var(--ink);color:var(--paper);border-radius:8px;padding:12px 18px;z-index:5;box-shadow:0 4px 20px #0003}.status:empty{display:none}.small{font-size:.82rem;color:var(--muted)}.no-results{padding:25px;text-align:center}.print-only{display:none}
+@media(max-width:1050px){main{padding:25px}.layout{grid-template-columns:235px minmax(0,1fr)}.sidebar{padding:22px 14px}.module,.intro{padding:23px}.hero{padding:27px}}
+@media(max-width:760px){.layout{display:block}.sidebar{position:relative;height:auto;max-height:none;border-right:0;border-bottom:1px solid var(--line)}.sidebar nav{display:grid;grid-template-columns:1fr 1fr;max-height:230px;overflow:auto}.privacy{margin-bottom:0}main{padding:16px}.hero{padding:25px}h2{font-size:1.4rem}.module,.intro{padding:20px}.two{grid-template-columns:1fr}.module-head{display:block}.done{margin-top:14px}pre{padding:15px;font-size:.77rem}}
+@media print{html{color-scheme:light}body{background:#fff;color:#111;font-size:10pt}.layout{display:block}.sidebar,.tools,.done,.code-bar button,.notes-label,.notes,.status,.skip,.no-results{display:none!important}main{padding:0;max-width:none}.hero{background:#fff;color:#111;border:2px solid #222;padding:20px}.hero p,.eyebrow{color:#333}.chip{border-color:#999}.module,.intro{box-shadow:none;border:0;border-top:1px solid #999;padding:18px 0;margin:12px 0;border-radius:0}.module[hidden]{display:block!important}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f2f2;color:#111;font-size:8pt}h2,h3,h4,summary,.module-head{break-after:avoid}.code-wrap,.callout,tr{break-inside:avoid}a{color:#143987}.print-only{display:block}.route{background:#fafafa}.warning{background:#fff6dd;color:#503500}.check{background:#edf8f1;color:#164832}details{border:0;padding:0}.sources{font-size:8pt}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to lab</a>
+<div class="layout">
+<aside class="sidebar" aria-label="Lab navigation">
+  <div class="brand"><small>Identity security / field lab</small>Microsoft Entra PIM</div>
+  <label for="search" class="small">Find a task, API, or setting</label>
+  <input id="search" type="search" placeholder="Search the lab..." autocomplete="off">
+  <div class="progress-label" id="progress-label">0 of 18 modules complete</div>
+  <progress id="progress" max="18" value="0" aria-labelledby="progress-label"></progress>
+  <nav id="nav" aria-label="Modules"></nav>
+  <div class="tools">
+    <button id="theme" type="button">Toggle theme</button>
+    <button id="expand" type="button">Expand details</button>
+    <button id="print" type="button">Print / PDF</button>
+    <button id="export" type="button">Export progress</button>
+    <button id="reset" type="button">Reset progress</button>
+  </div>
+  <p class="privacy">Offline-first. No analytics, CDN, account connection, or scripts sent to Azure. Progress and notes stay in this browser when local storage is available. Export before moving the file. Do not enter credentials or tokens.</p>
+</aside>
+<main id="main">
+<header class="hero">
+  <div class="eyebrow">Learn / configure / activate / govern</div>
+  <h1>Privileged access.<br>Practiced end to end.</h1>
+  <p>A hands-on lab for Microsoft Entra <strong>Privileged Identity Management</strong> (PIM): portal procedures, matching PowerShell and REST automation, negative tests, audit evidence, and deliberate teardown.</p>
+  <div class="chips"><span class="chip">18 modules</span><span class="chip">Entra roles</span><span class="chip">Azure resource roles</span><span class="chip">PIM for Groups</span><span class="chip">Reference check: 4 November 2026</span></div>
+</header>
+<section class="intro" aria-labelledby="start">
+  <h2 id="start">Before you touch a tenant</h2>
+  <div class="callout warning"><strong>Disposable tenant only.</strong> Directory-role policies affect <em>every assignment of that role in the tenant</em>, not just your test user. Conditional Access can lock users out. Use an isolated tenant and a dedicated Azure subscription or lab resource group. Never modify production Global Administrator, Privileged Role Administrator, emergency accounts, or existing policies for this exercise.</div>
+  <p><strong>Suggested pace:</strong> two half-day sessions, plus asynchronous expiry/review observations. Read each module's checkpoint before running it. Run the portal task <em>or</em> its automation equivalent for creation; do not create the same assignment twice. Use the other path to inspect the result.</p>
+  <p><strong>Coverage:</strong> the three PIM planes; discovery; eligible/active and permanent/time-bound assignments; activation, approval, denial, cancellation, deactivation, extension and renewal; MFA, ticketing, justification, notifications, authentication context; membership and ownership; role bundles; access reviews; alerts; audit/export; scoped/custom roles, ABAC, custom activation extensions; cleanup. Preview APIs and optional adjacent integrations are explicitly marked. This is a core human-administrator lab, not a claim that every preview, national cloud, or workload implements identical capabilities.</p>
+  <div class="flow" aria-label="PIM lifecycle"><span>Eligible</span> &rarr; <span>Request + policy checks</span> &rarr; <span>Approval if required</span> &rarr; <span>Active</span> &rarr; <span>Deactivate / expire</span> &rarr; <span>Review + audit</span></div>
+  <p class="small">Portal labels can vary by rollout: "ID Governance" may appear as "Identity governance." Search the portal for "Privileged Identity Management" if the navigation differs. Commercial-cloud endpoints are used throughout. Sources are linked next to the relevant exercises; open them for cloud-specific availability and current permissions.</p>
+  <noscript><div class="callout warning">JavaScript is disabled. All lab text and code remain readable. Navigation generation, copy/download buttons, search, progress, and notes require JavaScript.</div></noscript>
+</section>
+
+<section class="module" id="m00" data-title="00 / Prepare identities and safety boundaries">
+<div class="module-head"><div><div class="number">Module 00 / foundation</div><h2>Prepare identities and safety boundaries</h2><div class="meta">Actor: tenant administrator + subscription Owner | 25 minutes | No PIM assignments yet</div></div><label class="done"><input type="checkbox" data-complete="m00"> Complete</label></div>
+<p><strong>Goal:</strong> separate administration, requesting, approval, and observation. Record object IDs, not just display names. An Entra administrator does not automatically administer an Azure subscription.</p>
+<div class="table-wrap"><table><thead><tr><th>Lab identity / asset</th><th>Purpose and prerequisite</th></tr></thead><tbody>
+<tr><td>pim-admin</td><td>Existing test administrator with an active Privileged Role Administrator (PRA) assignment. Bootstrap consent may need a separate authorized tenant consent administrator. Do not make the only recovery administrator eligible.</td></tr>
+<tr><td>pim-operator</td><td>Licensed ordinary member user, no standing directory role and no pre-existing lab Azure permissions. This user requests elevation.</td></tr>
+<tr><td>pim-approver</td><td>Different licensed member user with a working mailbox if testing email. Specified as approver; no broad admin role is needed merely to approve a request.</td></tr>
+<tr><td>pim-auditor (optional)</td><td>Security Reader for directory evidence; separately grant Azure Reader at the lab scope if Azure visibility is required.</td></tr>
+<tr><td>Recovery accounts</td><td>Maintain the tenant's established emergency-access arrangements outside the lab. Verify they work. Never use their IDs in scripts or review scopes.</td></tr>
+<tr><td>rg-pim-lab</td><td>New, empty resource group. Resource administration performed by a lab subscription Owner. No VMs or paid services are required for the main exercises.</td></tr>
+<tr><td>PIM-Lab-Readers</td><td>New cloud-only, assigned-membership security group, optionally role-assignable for module 10. Keep an existing active lab owner on it.</td></tr>
+</tbody></table></div>
+<h3>Portal walkthrough</h3>
+<ol class="steps">
+<li>Open <a href="https://entra.microsoft.com" target="_blank" rel="noopener noreferrer">Microsoft Entra admin center</a>. Confirm the tenant name and tenant ID under <strong>Entra ID &gt; Overview</strong>. Use a tenant you are authorized to administer.</li>
+<li>Under <strong>Entra ID &gt; Licenses &gt; All products</strong> (or the linked Microsoft 365 licensing experience), verify the applicable P2 or ID Governance entitlement and assign appropriate licenses to the eligible users, approvers, and reviewers according to the licensing reference. A subscription alone is not a user license. Trials expire; record their end date.</li>
+<li>Under <strong>Entra ID &gt; Users &gt; All users</strong>, select existing disposable users or create the named lab accounts using <strong>New user &gt; Create new user</strong>. Record each <strong>Object ID</strong>. Complete first sign-in and MFA enrollment as each user. Never put passwords in your lab notes.</li>
+<li>Give only the designated admin the required test roles. Verify PRA is active before managing directory PIM. In a separate browser profile, ensure the operator has no directory roles. Use distinct profiles for admin, operator, and approver; private windows can share cookies.</li>
+<li>Open <a href="https://portal.azure.com" target="_blank" rel="noopener noreferrer">Azure portal</a>. Confirm the directory and subscription under the directory/subscription filter. As the subscription Owner, create <strong>Resource groups &gt; Create &gt; rg-pim-lab</strong> in an approved region. Add tags <code>Purpose=PIMLab</code> and <code>Owner=your-name</code>.</li>
+<li>Open <strong>ID Governance &gt; Privileged Identity Management</strong>. Locate <strong>Microsoft Entra roles</strong>, <strong>Azure resources</strong>, <strong>Groups</strong>, <strong>My roles</strong>, and <strong>Approve requests</strong>. If unavailable, check licenses, tenant, active role, and portal access restrictions before proceeding.</li>
+</ol>
+<div class="callout check"><strong>Checkpoint:</strong> you have tenant/subscription IDs, three distinct user object IDs, a tested MFA method, an empty tagged resource group, and an independent recovery route. No production assignment has been changed.</div>
+<details><summary>Concepts that prevent the most common mistakes</summary>
+<p><strong>Eligible</strong> means entitled to request activation, not already authorized. <strong>Active assigned</strong> is a direct administrator assignment. <strong>Activated</strong> is a temporary active assignment resulting from eligibility. Each can have its own eligibility/assignment lifetime; a 7-day eligibility does not grant 7 days of continuous active access.</p>
+<p><strong>Permanent eligible</strong> is not permanent active. A maximum activation duration is distinct from an assignment-expiration maximum. Directory scope <code>/</code> means the tenant; Azure scope is a resource ID. Graph and ARM use different identifiers and schemas.</p>
+</details>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/licensing-fundamentals">Licensing</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-configure">PIM concepts and permissions</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-deployment-plan">Deployment planning</a></p>
+</section>
+
+<section class="module" id="m01" data-title="01 / Build the automation workbench">
+<div class="module-head"><div><div class="number">Module 01 / automation foundation</div><h2>Build the automation workbench</h2><div class="meta">Actor: each user in their own PowerShell process | 20 minutes | PowerShell 7+</div></div><label class="done"><input type="checkbox" data-complete="m01"> Complete</label></div>
+<p>The snippets use the Microsoft Graph authentication module plus <code>Invoke-MgGraphRequest</code> so the HTTP payload remains visible. Azure exercises use <code>Invoke-AzRestMethod</code>. No legacy AzureAD/MSOnline modules, client secrets, or embedded credentials are used. Microsoft's retired <code>/beta/privilegedAccess/aadRoles</code> and <code>/azureResources</code> API surface was scheduled to stop returning data on <strong>28 October 2026</strong>; these examples use the current Graph schedule and ARM resource APIs instead.</p>
+<h3>Install once, then download the shared bootstrap</h3>
+<p>Run locally in a trusted PowerShell session. If modules already exist, inspect their versions instead of blindly updating. Consent to delegated scopes is a separate prerequisite from the signed-in user's role. A consent administrator should pre-consent only the scopes required for the chosen exercise; do not give the operator PRA to work around an API error.</p>
+<pre data-file="01-install.ps1"><code># Run only if these modules are missing in your lab workstation.
+Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Repository PSGallery
+Install-Module Az.Accounts -Scope CurrentUser -Repository PSGallery
+Get-Module Microsoft.Graph.Authentication, Az.Accounts -ListAvailable |
+    Select-Object Name, Version</code></pre>
+<p>Save the following as <code>00-bootstrap.ps1</code> in a new local lab folder. In every new terminal run <code>. .\00-bootstrap.ps1</code>. Supply the same lab IDs each time. This defines helpers and initializes a read-only-by-default switch. Files and evidence are written under the current lab folder, not uploaded.</p>
+<pre data-file="00-bootstrap.ps1"><code>$ErrorActionPreference = 'Stop'
+Import-Module Microsoft.Graph.Authentication
+Import-Module Az.Accounts
+$TenantId = Read-Host 'Disposable tenant ID'
+$SubscriptionId = Read-Host 'Lab subscription ID'
+$AdminId = Read-Host 'pim-admin object ID'
+$OperatorId = Read-Host 'pim-operator object ID'
+$ApproverId = Read-Host 'pim-approver object ID'
+foreach ($id in @($TenantId,$SubscriptionId,$AdminId,$OperatorId,$ApproverId)) {
+    $parsed = [guid]::Empty
+    if (-not [guid]::TryParse($id, [ref]$parsed) -or $parsed -eq [guid]::Empty) {
+        throw 'Use actual non-empty GUIDs, not example names.'
+    }
+}
+if (@($AdminId,$OperatorId,$ApproverId | Select-Object -Unique).Count -ne 3) {
+    throw 'Admin, operator, and approver must be different users.'
+}
+$RgName = 'rg-pim-lab'
+$AzureScope = "/subscriptions/$SubscriptionId/resourceGroups/$RgName"
+$Graph = 'https://graph.microsoft.com/v1.0'
+$GraphBeta = 'https://graph.microsoft.com/beta'
+$GroupId = $null
+$ApplyChanges = $false
+$Evidence = Join-Path (Get-Location) 'pim-lab-evidence'
+$null = New-Item -ItemType Directory -Path $Evidence -Force
+
+function Connect-LabGraph {
+    param([string[]]$Scopes, [string]$ExpectedUserId)
+    if (Get-MgContext) { Disconnect-MgGraph | Out-Null }
+    Connect-MgGraph -TenantId $TenantId -Scopes (@('User.Read') + $Scopes) `
+        -ContextScope Process -NoWelcome
+    $me = Invoke-MgGraphRequest -Method GET -Uri "$Graph/me"
+    if ($me.id -ne $ExpectedUserId -or (Get-MgContext).TenantId -ne $TenantId) {
+        Disconnect-MgGraph | Out-Null
+        throw 'Wrong account or tenant. Sign in with the required lab actor.'
+    }
+    Write-Host "Graph actor: $($me.userPrincipalName) / $($me.id)"
+}
+function Get-LabGraphItems {
+    param([string]$Uri)
+    while ($Uri) {
+        $page = Invoke-MgGraphRequest -Method GET -Uri $Uri
+        foreach ($item in $page.value) { $item }
+        $Uri = $page.'@odata.nextLink'
+    }
+}
+function Write-LabGraph {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact='High')]
+    param([string]$Uri, [string]$Method = 'POST', [object]$Body)
+    $json = if ($null -ne $Body) { $Body | ConvertTo-Json -Depth 40 }
+    if (-not $ApplyChanges) {
+        Write-Host "PREVIEW: $Method $Uri"
+        if ($json) { Write-Host $json }
+        return
+    }
+    if ($PSCmdlet.ShouldProcess($Uri, $Method)) {
+        $args = @{ Method=$Method; Uri=$Uri }
+        if ($json) { $args.Body=$json; $args.ContentType='application/json' }
+        Invoke-MgGraphRequest @args
+    }
+}
+function Connect-LabAzure {
+    param([string]$ExpectedUserId)
+    Disable-AzContextAutosave -Scope Process | Out-Null
+    Connect-AzAccount -Tenant $TenantId -Subscription $SubscriptionId `
+        -Scope Process | Out-Null
+    $ctx = Get-AzContext
+    if ($ctx.Tenant.Id -ne $TenantId -or $ctx.Subscription.Id -ne $SubscriptionId) {
+        throw 'Wrong Azure tenant or subscription.'
+    }
+    $token = (Get-AzAccessToken -ResourceUrl 'https://management.azure.com/').Token
+    if ($token -is [securestring]) {
+        $token = [System.Net.NetworkCredential]::new('', $token).Password
+    }
+    $part = $token.Split('.')[1].Replace('-', '+').Replace('_', '/')
+    $part = $part.PadRight($part.Length + ((4 - $part.Length % 4) % 4), '=')
+    $claims = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($part)) |
+        ConvertFrom-Json
+    if ($claims.oid -ne $ExpectedUserId -or $claims.tid -ne $TenantId) {
+        throw 'Wrong Azure actor. Reconnect as the required lab user.'
+    }
+    $token = $null
+    $claims = $null
+    Write-Host "ARM actor verified: $($ctx.Account.Id)"
+}
+function Read-LabArm {
+    param([string]$Path)
+    $r = Invoke-AzRestMethod -Method GET -Path $Path
+    if ($r.StatusCode -ge 400) { throw $r.Content }
+    $r.Content | ConvertFrom-Json -AsHashtable
+}
+function Get-LabArmItems {
+    param([string]$Path)
+    while ($Path) {
+        $page = Read-LabArm $Path
+        foreach ($item in $page.value) { $item }
+        $Path = $page.nextLink
+        if ($Path) { $Path = ([uri]$Path).PathAndQuery }
+    }
+}
+function Write-LabArm {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact='High')]
+    param([string]$Path, [string]$Method = 'PUT', [object]$Body)
+    $json = if ($null -ne $Body) { $Body | ConvertTo-Json -Depth 40 }
+    if (-not $ApplyChanges) {
+        Write-Host "PREVIEW: $Method $Path"
+        if ($json) { Write-Host $json }
+        return
+    }
+    if ($PSCmdlet.ShouldProcess($Path, $Method)) {
+        $args = @{ Method=$Method; Path=$Path }
+        if ($json) { $args.Payload=$json }
+        $r = Invoke-AzRestMethod @args
+        if ($r.StatusCode -ge 400) { throw $r.Content }
+        if ($r.Content) { $r.Content | ConvertFrom-Json -AsHashtable }
+    }
+}
+function Save-LabBaseline {
+    param([string]$Name, [object]$Value)
+    $path = Join-Path $Evidence $Name
+    if (-not (Test-Path -LiteralPath $path)) {
+        $Value | ConvertTo-Json -Depth 50 | Set-Content -LiteralPath $path -Encoding utf8
+    } else {
+        Write-Host "Keeping original baseline: $path"
+    }
+}
+Write-Host 'Read-only preview enabled. Set $ApplyChanges = $true only after inspecting a payload.'</code></pre>
+<div class="callout warning"><strong>Execution contract:</strong> every write wrapper previews by default. To actually submit a reviewed operation, set <code>$ApplyChanges = $true</code>, rerun that block, and confirm the specific prompt. Return it to <code>$false</code> afterward. Never "Yes to all" a cleanup you have not inspected. A preview returns no request/object ID; downstream inspection only works after actual submission. <code>-WhatIf</code> is also supported by the wrappers.</div>
+<div class="table-wrap"><table><thead><tr><th>Plane</th><th>API + authorization</th><th>Important distinction</th></tr></thead><tbody>
+<tr><td>Entra roles</td><td>Graph v1.0 <code>/roleManagement/directory</code>; delegated scope + user authority</td><td>Directory role definition ID, scope <code>/</code> or supported AU scope</td></tr>
+<tr><td>PIM for Groups</td><td>Graph v1.0 <code>/identityGovernance/privilegedAccess/group</code>; group-specific scopes</td><td><code>groupId</code> plus <code>accessId=member/owner</code></td></tr>
+<tr><td>Azure roles</td><td>ARM <code>Microsoft.Authorization</code>; Azure RBAC permissions at target scope</td><td>Fully qualified Azure role definition ID; <code>AdminAssign</code> / <code>SelfActivate</code> casing</td></tr>
+<tr><td>Approval / alerts</td><td>Graph beta or ARM preview where marked</td><td>Not interchangeable with stable assignment APIs; use the portal if previews are disallowed</td></tr>
+</tbody></table></div>
+<div class="callout check"><strong>Checkpoint:</strong> dot-sourcing defines the helpers, leaves writes disabled, and creates only a local evidence directory. If downloading scripts, keep them in the same folder and <strong>dot-source the chosen exercise scripts too</strong>, for example <code>. .\02-directory-inventory.ps1</code>, so recorded IDs remain available in that actor's terminal. Alternatively paste each block directly. Do not execute every downloaded file in a batch: alternatives, separate identities, previews, and cleanup require deliberate selection. These are teaching scripts, not a rerunnable deployment engine.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/graph/api/rbacapplication-post-roleeligibilityschedulerequests?view=graph-rest-1.0">Graph eligibility API</a><a href="https://learn.microsoft.com/en-us/rest/api/authorization/role-eligibility-schedule-requests/create?view=rest-authorization-2020-10-01">ARM eligibility API</a><a href="https://learn.microsoft.com/en-us/graph/api/resources/privilegedidentitymanagement-for-groups-api-overview?view=graph-rest-1.0">Groups API overview</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-apis">API migration and retirement</a></p>
+</section>
+
+<section class="module" id="m02" data-title="02 / Discover and capture the baseline">
+<div class="module-head"><div><div class="number">Module 02 / discover</div><h2>Discover and capture the baseline</h2><div class="meta">Actor: pim-admin; Azure inventory as lab resource administrator | 15 minutes</div></div><label class="done"><input type="checkbox" data-complete="m02"> Complete</label></div>
+<div class="route">Entra admin center &gt; ID Governance &gt; Privileged Identity Management &gt; Microsoft Entra roles &gt; Assignments</div>
+<ol class="steps">
+<li>Open <strong>Assignments</strong>. Compare <strong>Eligible assignments</strong>, <strong>Active assignments</strong>, and <strong>Expired assignments</strong>. Filter for the operator and confirm there is no standing assignment that would invalidate the activation tests.</li>
+<li>Open <strong>Roles</strong>, find <strong>Reports Reader</strong>, and inspect its assignments and settings. This is the directory training role. Do not substitute Global Administrator. Even Reports Reader exposes tenant reporting; keep the tenant disposable.</li>
+<li>In <strong>PIM &gt; Azure resources</strong>, choose the lab subscription and then the resource-group type/filter to locate <code>rg-pim-lab</code>. Check its assignments. In Azure portal open the resource group's <strong>Access control (IAM) &gt; Check access</strong> for the operator. Inspect inherited and group-based access too.</li>
+<li>Record existing role settings before changes. Open <strong>Microsoft Entra roles &gt; Discovery and insights (preview)</strong>. Inspect <strong>Reduce Global Administrators</strong>, <strong>Eliminate standing access</strong>, and <strong>Review service principals</strong> without submitting changes. Its conversion/removal actions can change real assignments. Never select recovery administrators. For a safe conversion demonstration, use only a separate ordinary lab user's active Reports Reader comparison assignment: record the current end, create the equivalent eligible assignment, verify it, then remove the active assignment. These are separate operations, not an atomic transaction.</li>
+</ol>
+<h3>Automation / inventory and resolve the exact role</h3>
+<pre data-file="02-directory-inventory.ps1"><code># Dot-source 00-bootstrap.ps1 first. Run as pim-admin.
+Connect-LabGraph -ExpectedUserId $AdminId -Scopes @(
+    'RoleManagement.Read.Directory', 'RoleEligibilitySchedule.Read.Directory',
+    'RoleAssignmentSchedule.Read.Directory', 'RoleManagementPolicy.Read.Directory'
+)
+$filter = [uri]::EscapeDataString("displayName eq 'Reports Reader'")
+$roles = @(Get-LabGraphItems "$Graph/roleManagement/directory/roleDefinitions?`$filter=$filter")
+if ($roles.Count -ne 1) { throw 'Expected exactly one Reports Reader definition.' }
+$DirectoryRoleId = $roles[0].id
+$f = [uri]::EscapeDataString("principalId eq '$OperatorId'")
+foreach ($kind in @('roleEligibilityScheduleInstances','roleAssignmentScheduleInstances')) {
+    $items = @(Get-LabGraphItems "$Graph/roleManagement/directory/$kind`?`$filter=$f")
+    $items | ConvertTo-Json -Depth 15 |
+        Set-Content (Join-Path $Evidence "$kind-before.json") -Encoding utf8
+    $items | Select-Object id, principalId, roleDefinitionId, directoryScopeId, endDateTime
+}
+Write-Host "Reports Reader roleDefinitionId: $DirectoryRoleId"</code></pre>
+<pre data-file="02-azure-inventory.ps1"><code># Sign in as the lab subscription/resource administrator.
+Connect-LabAzure -ExpectedUserId $AdminId
+$rg = Read-LabArm "$AzureScope`?api-version=2021-04-01"
+if ($rg.tags.Purpose -ne 'PIMLab') { throw 'Missing PIMLab resource group tag.' }
+Get-LabArmItems "$AzureScope/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01" |
+    Select-Object name, @{n='Principal';e={$_.properties.principalId}},
+        @{n='Scope';e={$_.properties.scope}}
+# Portal IAM Check access is still required: direct assignments alone do not prove
+# absence of inherited, nested-group, or other effective access paths.</code></pre>
+<div class="callout check"><strong>Checkpoint:</strong> store the Reports Reader definition ID and the operator's before-state. The operator must not already have equivalent effective access through another path. A request ID, a schedule ID, and a schedule-instance ID are different objects; save them with explicit names.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-getting-started">PIM navigation</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-how-to-add-role-to-user">Directory assignments</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-assign-roles">Azure assignments</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-security-wizard">Discovery and insights</a></p>
+</section>
+
+<section class="module" id="m03" data-title="03 / Configure directory-role policies">
+<div class="module-head"><div><div class="number">Module 03 / policy</div><h2>Configure directory-role policies</h2><div class="meta">Actor: active PRA | 25 minutes | Tenant-wide policy change</div></div><label class="done"><input type="checkbox" data-complete="m03"> Complete</label></div>
+<div class="route">PIM &gt; Microsoft Entra roles &gt; Roles &gt; Reports Reader &gt; Role settings &gt; Edit</div>
+<ol class="steps">
+<li>Capture the original <strong>Activation</strong>, <strong>Assignment</strong>, and <strong>Notification</strong> settings. Use the automation below to save a JSON baseline <em>before</em> making portal changes if you want scripted restoration.</li>
+<li>Under <strong>Activation</strong>, set maximum activation duration to <strong>1 hour</strong>. Require <strong>MFA</strong>, <strong>justification</strong>, and <strong>ticket information</strong>. Set <strong>Require approval to activate</strong>; select <code>pim-approver</code> explicitly. A real deployment should designate at least two available approvers.</li>
+<li>Under <strong>Assignment</strong>, require expiration for eligible and active assignments. Set maximum eligible duration to <strong>7 days</strong> and maximum active assignment duration to <strong>1 day</strong>. Require MFA and justification for administrators creating active assignments. If the UI uses larger units or restricts a value, use the nearest permitted value and keep the exercise assignment shorter.</li>
+<li>Under <strong>Notification</strong>, inspect all event/recipient rows, leave default notifications enabled, and add an authorized test mailbox to the administrator activation row. Enable all events for that row. Save with <strong>Update</strong>, reopen, and verify every tab.</li>
+<li>Explain the limits: ticket fields record data, but do not validate ServiceNow/Jira ticket state. MFA can be satisfied by an existing session claim; a prompt is not guaranteed for every activation. Approval is single-stage, not "everyone must approve."</li>
+</ol>
+<h3>Automation / map role to policy and preserve the original</h3>
+<pre data-file="03-directory-policy.ps1"><code># Requires $DirectoryRoleId from module 02.
+Connect-LabGraph -ExpectedUserId $AdminId -Scopes @(
+    'RoleManagementPolicy.ReadWrite.Directory'
+)
+$f = [uri]::EscapeDataString("scopeId eq '/' and scopeType eq 'DirectoryRole'")
+$assignments = @(Get-LabGraphItems "$Graph/policies/roleManagementPolicyAssignments?`$filter=$f")
+$pa = @($assignments | Where-Object roleDefinitionId -eq $DirectoryRoleId)
+if ($pa.Count -ne 1) { throw 'Expected one directory policy assignment.' }
+$DirectoryPolicyId = $pa[0].policyId
+$ruleBase = "$Graph/policies/roleManagementPolicies/$DirectoryPolicyId/rules"
+$rules = @(Get-LabGraphItems $ruleBase)
+Save-LabBaseline "directory-$DirectoryRoleId-baseline.json" @{
+    tenantId=$TenantId; policyId=$DirectoryPolicyId; rules=$rules
+}
+
+$changes = @(
+    @{id='Expiration_EndUser_Assignment'
+      '@odata.type'='#microsoft.graph.unifiedRoleManagementPolicyExpirationRule'
+      isExpirationRequired=$true; maximumDuration='PT1H'},
+    @{id='Enablement_EndUser_Assignment'
+      '@odata.type'='#microsoft.graph.unifiedRoleManagementPolicyEnablementRule'
+      enabledRules=@('MultiFactorAuthentication','Justification','Ticketing')},
+    @{id='Expiration_Admin_Eligibility'
+      '@odata.type'='#microsoft.graph.unifiedRoleManagementPolicyExpirationRule'
+      isExpirationRequired=$true; maximumDuration='P7D'},
+    @{id='Expiration_Admin_Assignment'
+      '@odata.type'='#microsoft.graph.unifiedRoleManagementPolicyExpirationRule'
+      isExpirationRequired=$true; maximumDuration='P1D'},
+    @{id='Enablement_Admin_Assignment'
+      '@odata.type'='#microsoft.graph.unifiedRoleManagementPolicyEnablementRule'
+      enabledRules=@('MultiFactorAuthentication','Justification')}
+)
+foreach ($change in $changes) {
+    $existing = @($rules | Where-Object id -eq $change.id)
+    if ($existing.Count -ne 1) { throw "Missing rule: $($change.id)" }
+    $change.target = $existing[0].target
+    Write-LabGraph -Method PATCH -Uri "$ruleBase/$($change.id)" -Body $change
+}
+$approval = @{
+    '@odata.type'='#microsoft.graph.unifiedRoleManagementPolicyApprovalRule'
+    id='Approval_EndUser_Assignment'
+    target=($rules | Where-Object id -eq 'Approval_EndUser_Assignment').target
+    setting=@{
+        isApprovalRequired=$true; isApprovalRequiredForExtension=$false
+        isRequestorJustificationRequired=$true; approvalMode='SingleStage'
+        approvalStages=@(@{
+            approvalStageTimeOutInDays=1; isApproverJustificationRequired=$true
+            escalationTimeInMinutes=0; isEscalationEnabled=$false
+            primaryApprovers=@(@{
+                '@odata.type'='#microsoft.graph.singleUser'; userId=$ApproverId
+            })
+            escalationApprovers=@()
+        })
+    }
+}
+Write-LabGraph -Method PATCH -Uri "$ruleBase/Approval_EndUser_Assignment" -Body $approval
+
+$mail = Read-Host 'Authorized lab notification mailbox (email address)'
+$notificationId = 'Notification_Admin_EndUser_Assignment'
+$notification = @{
+    '@odata.type'='#microsoft.graph.unifiedRoleManagementPolicyNotificationRule'
+    id=$notificationId
+    target=($rules | Where-Object id -eq $notificationId).target
+    notificationType='Email'; recipientType='Admin'; notificationLevel='All'
+    isDefaultRecipientsEnabled=$true; notificationRecipients=@($mail)
+}
+Write-LabGraph -Method PATCH -Uri "$ruleBase/$notificationId" -Body $notification
+Get-LabGraphItems $ruleBase | ConvertTo-Json -Depth 30 |
+    Set-Content (Join-Path $Evidence 'directory-policy-after.json') -Encoding utf8</code></pre>
+<p class="small">The script patches individual rules and retains each discovered target. It does not replace unrelated rules. Arrays such as <code>enabledRules</code> and approvers are intentionally replaced for this disposable role policy; review them before applying.</p>
+<div class="callout check"><strong>Checkpoint:</strong> portal and API both show a one-hour activation cap, expiration limits, the named approver, and the test notification recipient. Baseline JSON exists. No operator activation has occurred.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-how-to-change-default-settings">Portal policy settings</a><a href="https://learn.microsoft.com/en-us/graph/api/policyroot-list-rolemanagementpolicyassignments?view=graph-rest-1.0">Discover policy assignments</a><a href="https://learn.microsoft.com/en-us/graph/api/unifiedrolemanagementpolicyrule-update?view=graph-rest-1.0">Patch a rule</a><a href="https://learn.microsoft.com/en-us/graph/how-to-pim-update-rules">Rule examples</a><a href="https://learn.microsoft.com/en-us/graph/api/resources/unifiedrolemanagementpolicynotificationrule?view=graph-rest-1.0">Notification schema</a><a href="https://learn.microsoft.com/en-us/graph/api/resources/unifiedrolemanagementpolicyenablementrule?view=graph-rest-1.0">Enablement schema</a></p>
+</section>
+
+<section class="module" id="m04" data-title="04 / Assign eligible and active directory roles">
+<div class="module-head"><div><div class="number">Module 04 / assign</div><h2>Assign eligible and active directory roles</h2><div class="meta">Actor: active PRA | 20 minutes | Training role: Reports Reader</div></div><label class="done"><input type="checkbox" data-complete="m04"> Complete</label></div>
+<div class="route">PIM &gt; Microsoft Entra roles &gt; Roles &gt; Add assignments</div>
+<ol class="steps">
+<li>Select <strong>Reports Reader</strong>, choose <code>pim-operator</code>, and select <strong>Next</strong>. Set type <strong>Eligible</strong>, deselect permanent eligibility, and choose now through <strong>7 days</strong> from now. Assign. Record actual UTC start/end values.</li>
+<li>Open <strong>Eligible assignments</strong> and verify the operator, role, scope, and expiration. In the operator profile, check <strong>My roles &gt; Microsoft Entra roles &gt; Eligible assignments</strong>. Do not activate yet.</li>
+<li>Optional comparison: use a separate ordinary lab user for a <strong>1-hour active assignment</strong>. On Add assignments choose <strong>Active</strong>, a one-hour window, and a reason. The user has access without self-activation. Remove that comparison assignment after at least five minutes. Do not use the approver or recovery account for this comparison.</li>
+<li>Inspect the permanent toggles without saving: policy can prohibit permanent eligible or permanent active access. Do not weaken the policy just to create a permanent assignment. Record which settings would have to change and why permanent eligible still requires activation.</li>
+</ol>
+<h3>Automation / seven-day eligibility</h3>
+<pre data-file="04-directory-eligible.ps1"><code># Requires $DirectoryRoleId from module 02.
+Connect-LabGraph -ExpectedUserId $AdminId -Scopes @(
+    'RoleEligibilitySchedule.ReadWrite.Directory'
+)
+$body = @{
+    action='adminAssign'; principalId=$OperatorId
+    roleDefinitionId=$DirectoryRoleId; directoryScopeId='/'
+    justification='PIM-LAB: seven-day Reports Reader training eligibility'
+    scheduleInfo=@{
+        startDateTime=[datetime]::UtcNow.ToString('o')
+        expiration=@{type='afterDateTime'; endDateTime=[datetime]::UtcNow.AddDays(7).ToString('o')}
+    }
+}
+$eligibilityRequest = Write-LabGraph `
+    -Uri "$Graph/roleManagement/directory/roleEligibilityScheduleRequests" -Body $body
+if ($eligibilityRequest) {
+    $eligibilityRequest | ConvertTo-Json -Depth 15 |
+        Set-Content (Join-Path $Evidence 'directory-eligibility-request.json') -Encoding utf8
+    $eligibilityRequest | Select-Object id, status, targetScheduleId
+}</code></pre>
+<details><summary>Automation / optional active-assigned comparison</summary>
+<pre data-file="04-directory-active-comparison.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @(
+    'RoleAssignmentSchedule.ReadWrite.Directory'
+)
+$ComparisonId = Read-Host 'Object ID of a separate ordinary disposable comparison user'
+if ($ComparisonId -in @($AdminId,$OperatorId,$ApproverId)) {
+    throw 'Use a separate comparison account to avoid masking the main tests.'
+}
+$body = @{
+    action='adminAssign'; principalId=$ComparisonId
+    roleDefinitionId=$DirectoryRoleId; directoryScopeId='/'
+    justification='PIM-LAB: compare active assigned with eligible'
+    scheduleInfo=@{
+        startDateTime=[datetime]::UtcNow.ToString('o')
+        expiration=@{type='afterDuration'; duration='PT1H'}
+    }
+}
+Write-LabGraph -Uri "$Graph/roleManagement/directory/roleAssignmentScheduleRequests" -Body $body
+# After at least 5 minutes, remove this assignment using the same body:
+# $body.action = 'adminRemove'
+# $body.Remove('scheduleInfo')
+# Write-LabGraph -Uri "$Graph/roleManagement/directory/roleAssignmentScheduleRequests" -Body $body</code></pre>
+</details>
+<div class="callout check"><strong>Checkpoint:</strong> the main operator appears as eligible, not active. The request's provisioning status alone is not the final authorization check: confirm the eligibility schedule/instance and portal entry. Assignments cannot be removed within the first five minutes.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-how-to-add-role-to-user">Assign in the portal</a><a href="https://learn.microsoft.com/en-us/graph/api/rbacapplication-post-roleeligibilityschedulerequests?view=graph-rest-1.0">Eligible requests</a><a href="https://learn.microsoft.com/en-us/graph/api/rbacapplication-post-roleassignmentschedulerequests?view=graph-rest-1.0">Active requests</a></p>
+</section>
+
+<section class="module" id="m05" data-title="05 / Request, approve, deny, cancel and deactivate">
+<div class="module-head"><div><div class="number">Module 05 / elevation workflow</div><h2>Request, approve, deny, cancel and deactivate</h2><div class="meta">Actors: operator and approver in separate profiles | 35 minutes</div></div><label class="done"><input type="checkbox" data-complete="m05"> Complete</label></div>
+<div class="route">Operator: PIM &gt; My roles &gt; Microsoft Entra roles &gt; Eligible assignments &gt; Reports Reader &gt; Activate</div>
+<ol class="steps">
+<li>Before activation, open <strong>Entra ID &gt; Monitoring &amp; health &gt; Sign-in logs</strong> and try to view another lab user's events, such as the admin's recent sign-in. Record the denied/unavailable state. Ordinary users can view their own sign-ins, so your own history is not a valid privilege test. Have the admin sign in recently to ensure a positive test event exists.</li>
+<li>Select <strong>Activate</strong>. Complete additional verification when required. Use duration <strong>30 minutes</strong>, reason <code>PIM-LAB: inspect test reporting</code>, ticket system <code>LAB</code>, ticket number <code>CHG-PIM-001</code>. Submit and record the request ID. Status should become pending approval rather than immediately granting access.</li>
+<li>In the approver profile, open <strong>PIM &gt; Approve requests &gt; Microsoft Entra roles</strong>. Inspect the requester, scope, reason, duration, and ticket. Select the request, choose <strong>Approve</strong>, provide <code>Approved for isolated lab</code>, and submit.</li>
+<li>Return as operator. Refresh <strong>My roles &gt; Active assignments</strong>. Once provisioned, refresh the report or sign out/in to obtain a fresh application session. Record successful access and activation expiry. Check the relevant notification mailbox; approval, activation, and admin notifications are different events.</li>
+<li>Under <strong>Active assignments</strong> choose <strong>Deactivate</strong> once the minimum assignment interval has elapsed. Confirm the role is no longer active. Re-test after refreshing credentials; downstream applications may cache authorization.</li>
+<li>Submit a second activation. The approver chooses <strong>Deny</strong> with a reason. Confirm the denied request did not create an active assignment.</li>
+<li>Submit a third activation, then use <strong>My requests</strong> to <strong>Cancel</strong> while it is still pending. Cancellation is not deactivation. Finally, test requesting two hours: policy should prevent/reject an activation longer than one hour. Capture the error; do not change the cap.</li>
+</ol>
+<h3>Automation / operator request, inspect, deactivate or cancel</h3>
+<p>In the operator terminal, dot-source the bootstrap and set <code>$DirectoryRoleId</code> to the ID recorded in module 02. An eligible user may perform self-actions without PRA. The delegated client still needs consent for the API scope, and the signed-in session must satisfy authentication policy.</p>
+<pre data-file="05-directory-activate.ps1"><code>Connect-LabGraph -ExpectedUserId $OperatorId -Scopes @(
+    'RoleAssignmentSchedule.ReadWrite.Directory'
+)
+$DirectoryRoleId = Read-Host 'Reports Reader roleDefinitionId from module 02'
+$activationBody = @{
+    action='selfActivate'; principalId=$OperatorId
+    roleDefinitionId=$DirectoryRoleId; directoryScopeId='/'
+    justification='PIM-LAB: inspect test reporting'
+    ticketInfo=@{ticketSystem='LAB'; ticketNumber='CHG-PIM-001'}
+    scheduleInfo=@{
+        startDateTime=[datetime]::UtcNow.ToString('o')
+        expiration=@{type='afterDuration'; duration='PT30M'}
+    }
+}
+$activation = Write-LabGraph `
+    -Uri "$Graph/roleManagement/directory/roleAssignmentScheduleRequests" -Body $activationBody
+if ($activation) {
+    $activation | ConvertTo-Json -Depth 15 |
+        Set-Content (Join-Path $Evidence 'directory-activation-request.json') -Encoding utf8
+    $DirectoryRequestId = $activation.id
+    $activation | Select-Object id, status, approvalId, targetScheduleId
+}
+# Once submitted, inspect the actual request (do not blindly resubmit on timeouts).
+if ($DirectoryRequestId) {
+    Invoke-MgGraphRequest -Method GET `
+        -Uri "$Graph/roleManagement/directory/roleAssignmentScheduleRequests/$DirectoryRequestId"
+}</code></pre>
+<pre data-file="05-directory-deactivate-or-cancel.ps1"><code># Same operator connection. Choose ONE action at the prompt.
+$choice = Read-Host 'Type deactivate for an active assignment, or cancel for a pending request'
+if ($choice -eq 'deactivate') {
+    $body = @{
+        action='selfDeactivate'; principalId=$OperatorId
+        roleDefinitionId=$DirectoryRoleId; directoryScopeId='/'
+        justification='PIM-LAB: task finished'
+    }
+    Write-LabGraph -Uri "$Graph/roleManagement/directory/roleAssignmentScheduleRequests" -Body $body
+} elseif ($choice -eq 'cancel') {
+    $DirectoryRequestId = Read-Host 'Exact pending request ID to cancel'
+    Write-LabGraph -Uri "$Graph/roleManagement/directory/roleAssignmentScheduleRequests/$DirectoryRequestId/cancel"
+} else { throw 'No action selected.' }</code></pre>
+<h3>Automation / delegated approver <span class="small">(Graph beta)</span></h3>
+<p>Use a separate approver terminal. A service principal cannot approve this flow. The beta endpoint is deliberately visible. Prefer the portal if beta APIs are not allowed in your environment; extension/renewal approval is not supported by this activation-approval API.</p>
+<pre data-file="05-directory-approve-beta.ps1"><code>Connect-LabGraph -ExpectedUserId $ApproverId -Scopes @(
+    'RoleAssignmentSchedule.ReadWrite.Directory'
+)
+$DirectoryRequestId = Read-Host 'Exact operator activation request ID'
+$req = Invoke-MgGraphRequest -Method GET `
+    -Uri "$Graph/roleManagement/directory/roleAssignmentScheduleRequests/$DirectoryRequestId"
+if ($req.principalId -ne $OperatorId -or $req.status -ne 'PendingApproval') {
+    throw 'Not the expected pending operator request.'
+}
+$approvalId = $req.approvalId
+if (-not $approvalId) { throw 'No approval ID; inspect the request in the portal.' }
+$approval = Invoke-MgGraphRequest -Method GET `
+    -Uri "$GraphBeta/roleManagement/directory/roleAssignmentApprovals/$approvalId"
+$steps = @($approval.steps | Where-Object { $_.assignedToMe -and $_.status -eq 'InProgress' })
+if ($steps.Count -ne 1) { throw 'Expected one pending step assigned to this approver.' }
+$decision = Read-Host 'Approve or Deny'
+if ($decision -notin @('Approve','Deny')) { throw 'Invalid decision.' }
+Write-LabGraph -Method PATCH `
+    -Uri "$GraphBeta/roleManagement/directory/roleAssignmentApprovals/$approvalId/steps/$($steps[0].id)" `
+    -Body @{reviewResult=$decision; justification='PIM-LAB: reviewed isolated training request'}</code></pre>
+<h3>Automation / verify a protected read before, during, and after activation</h3>
+<pre data-file="05-directory-verify-access.ps1"><code># Run this same read in each phase; record whether access is authorized.
+# Pre-consent the delegated scope using an authorized consent administrator.
+Connect-LabGraph -ExpectedUserId $OperatorId -Scopes @('AuditLog.Read.All')
+$since = [datetime]::UtcNow.AddHours(-2).ToString('yyyy-MM-ddTHH:mm:ssZ')
+$f = [uri]::EscapeDataString("userId eq '$AdminId' and createdDateTime ge $since")
+$response = Invoke-MgGraphRequest -Method GET `
+    -Uri "$Graph/auditLogs/signIns?`$filter=$f&amp;`$top=1"
+$response.value | Select-Object id, userId, createdDateTime, appDisplayName
+# A 200 with no rows is not proof of privilege: ensure a matching admin event
+# exists, and verify an event for the OTHER user is actually returned.
+# Reconnect afterward with RoleAssignmentSchedule.ReadWrite.Directory for self-actions.</code></pre>
+<div class="callout check"><strong>Checkpoint:</strong> save one approved, one denied, and one cancelled request ID; evidence that access works only during activation; one policy rejection; and proof the operator is no longer active. A successful HTTP POST is not proof of granted access.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-how-to-activate-role">Activation and cache behavior</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-approval-workflow">Approval workflow</a><a href="https://learn.microsoft.com/en-us/graph/api/rbacapplication-post-roleassignmentschedulerequests?view=graph-rest-1.0">Self-actions</a><a href="https://learn.microsoft.com/en-us/graph/api/approvalstep-update?view=graph-rest-beta">Beta approval permissions</a><a href="https://learn.microsoft.com/en-us/graph/api/signin-list?view=graph-rest-1.0">Sign-in read authorization</a></p>
+</section>
+
+<section class="module" id="m06" data-title="06 / Expire, extend, renew and revoke">
+<div class="module-head"><div><div class="number">Module 06 / assignment lifecycle</div><h2>Expire, extend, renew and revoke</h2><div class="meta">Actors: operator and PRA | 20 minutes + expiry observation</div></div><label class="done"><input type="checkbox" data-complete="m06"> Complete</label></div>
+<p><strong>Extend</strong> means change the end of an unexpired assignment; <strong>renew</strong> means restore a recently expired assignment. Neither should be confused with leaving one activation running indefinitely.</p>
+<ol class="steps">
+<li>As operator open <strong>PIM &gt; My roles &gt; Microsoft Entra roles &gt; Eligible assignments</strong>. For the seven-day eligibility choose <strong>Extend</strong>, when offered. Enter a business reason. The self-extension action is available when the assignment is within its extension window (documented as the next 14 days).</li>
+<li>As PRA open <strong>PIM &gt; Microsoft Entra roles &gt; Approve requests</strong> or the corresponding extension/renewal request blade. Inspect the proposed dates and approve only a period allowed by the role's assignment policy. Confirm the eligibility end date changed. An extension request does not automatically extend access.</li>
+<li>For a short expiry exercise, create an additional eligibility for a separate disposable user with a <strong>15-minute</strong> end date. Do not overwrite the main operator's seven-day assignment. Wait until it expires, refresh <strong>Expired assignments</strong>, then use <strong>Renew</strong> and verify the new end date. If an expired record is no longer available, create a new assignment rather than treating an old ID as valid forever.</li>
+<li>As PRA use the assignment's <strong>Update</strong> action to adjust an unexpired end date within policy. To test revocation, use <strong>Remove</strong> only on the short-lived comparison assignment. Removing eligibility and removing an active session are separate checks; explicitly inspect active assignments too.</li>
+<li>As operator activate for 15 minutes without manually deactivating. Record UTC expiry, wait, and verify PIM removes the active assignment. Re-check effective access after a fresh session. Do not assume removal instantly invalidates every cached application token.</li>
+</ol>
+<h3>Automation / administrator lifecycle actions</h3>
+<p>Use this block once per selected action. For <code>adminRenew</code>, use the comparison user's expired eligibility. The portal remains the preferred teaching path for approving user-initiated extension/renewal requests.</p>
+<pre data-file="06-directory-lifecycle.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @(
+    'RoleEligibilitySchedule.ReadWrite.Directory'
+)
+$DirectoryRoleId = Read-Host 'Reports Reader roleDefinitionId'
+$LifecyclePrincipalId = Read-Host 'Exact lab principal object ID whose eligibility is being changed'
+$action = Read-Host 'adminUpdate, adminExtend, adminRenew, or adminRemove'
+if ($action -notin @('adminUpdate','adminExtend','adminRenew','adminRemove')) {
+    throw 'Unsupported lab action.'
+}
+if ($LifecyclePrincipalId -in @($AdminId,$ApproverId)) {
+    throw 'Do not change admin or approver assignments in this exercise.'
+}
+$body = @{
+    action=$action; principalId=$LifecyclePrincipalId
+    roleDefinitionId=$DirectoryRoleId; directoryScopeId='/'
+    justification="PIM-LAB: explicit lifecycle exercise $action"
+}
+if ($action -ne 'adminRemove') {
+    $end = [datetimeoffset]::Parse((Read-Host 'New UTC eligibility end, within role policy (ISO 8601)'))
+    if ($end -le [datetimeoffset]::UtcNow.AddMinutes(5)) { throw 'End must be in the future.' }
+    # For Extend, choose an end LATER than the existing end; for Renew, use
+    # the recently expired comparison assignment. Inspect policy before applying.
+    $body.scheduleInfo = @{
+        startDateTime=[datetime]::UtcNow.ToString('o')
+        expiration=@{type='afterDateTime'; endDateTime=$end.UtcDateTime.ToString('o')}
+    }
+}
+Write-LabGraph -Uri "$Graph/roleManagement/directory/roleEligibilityScheduleRequests" -Body $body
+# For an ACTIVE assigned role, use roleAssignmentScheduleRequests instead.
+# Do not DELETE a historical request object to revoke a schedule.</code></pre>
+<pre data-file="06-directory-self-extension.ps1"><code>Connect-LabGraph -ExpectedUserId $OperatorId -Scopes @(
+    'RoleEligibilitySchedule.ReadWrite.Directory'
+)
+$DirectoryRoleId = Read-Host 'Reports Reader roleDefinitionId'
+$action = Read-Host 'selfExtend for unexpired eligibility, or selfRenew for expired eligibility'
+if ($action -notin @('selfExtend','selfRenew')) { throw 'Invalid self action.' }
+$end = [datetimeoffset]::Parse((Read-Host 'Requested new UTC end (later than existing end for Extend), within policy'))
+if ($end -le [datetimeoffset]::UtcNow.AddMinutes(5)) { throw 'Requested end must be in the future.' }
+$body = @{
+    action=$action; principalId=$OperatorId
+    roleDefinitionId=$DirectoryRoleId; directoryScopeId='/'
+    justification='PIM-LAB: request continued lab eligibility'
+    scheduleInfo=@{
+        startDateTime=[datetime]::UtcNow.ToString('o')
+        expiration=@{type='afterDateTime'; endDateTime=$end.UtcDateTime.ToString('o')}
+    }
+}
+Write-LabGraph -Uri "$Graph/roleManagement/directory/roleEligibilityScheduleRequests" -Body $body</code></pre>
+<div class="callout check"><strong>Checkpoint:</strong> distinguish request status, schedule end, and activation end. Demonstrate natural expiry, extension of an unexpired assignment, renewal of an expired test assignment, and explicit removal. Keep the main operator's eligibility for later modules.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-how-to-renew-extend">Extension/renewal behavior</a><a href="https://learn.microsoft.com/en-us/graph/api/rbacapplication-post-roleeligibilityschedulerequests?view=graph-rest-1.0">Eligibility lifecycle actions</a><a href="https://learn.microsoft.com/en-us/graph/api/rbacapplication-post-roleassignmentschedulerequests?view=graph-rest-1.0">Active lifecycle actions</a></p>
+</section>
+
+<section class="module" id="m07" data-title="07 / Configure Azure scope and role settings">
+<div class="module-head"><div><div class="number">Module 07 / Azure resource plane</div><h2>Configure Azure scope and role settings</h2><div class="meta">Actor: lab Azure Owner/User Access Administrator with required resource permissions | 25 minutes</div></div><label class="done"><input type="checkbox" data-complete="m07"> Complete</label></div>
+<div class="route">PIM &gt; Azure resources &gt; lab subscription &gt; rg-pim-lab &gt; Settings &gt; Contributor &gt; Edit</div>
+<ol class="steps">
+<li>Locate the lab resource group through <strong>Azure resources</strong>. If it does not appear, use the resource-type filter and refresh discovery. Verify the signed-in user has the required Azure permissions at this scope. Being PRA in Entra is not sufficient.</li>
+<li>Open <strong>Settings &gt; Contributor</strong>. Capture the original settings. Configure one-hour activation, MFA, justification, ticketing, and explicit approval by <code>pim-approver</code>.</li>
+<li>On assignment settings require expiration for eligible and active assignments. Use maximum eligible seven days and active one day where accepted. Inspect notifications and add only an authorized test address. Save and reopen.</li>
+<li>In Azure portal open <strong>rg-pim-lab &gt; Access control (IAM)</strong>. Compare <strong>Role assignments</strong> with the PIM assignment views. Role policy configuration is at a specific role/resource scope; do not assume configuring the subscription also configures every resource group's policy.</li>
+<li>Explain why this role is selected: Contributor can change resources but cannot generally assign Azure roles. An empty resource group plus tag changes gives a small, testable authorization boundary without deploying paid workloads.</li>
+</ol>
+<h3>Automation / create the tagged resource group if you skipped portal creation</h3>
+<pre data-file="07-create-resource-group.ps1"><code>Connect-LabAzure -ExpectedUserId $AdminId
+$existing = Invoke-AzRestMethod -Method GET -Path "$AzureScope`?api-version=2021-04-01"
+if ($existing.StatusCode -eq 200) {
+    $found = $existing.Content | ConvertFrom-Json
+    if ($found.tags.Purpose -ne 'PIMLab') { throw 'Existing non-lab resource group. Stop.' }
+    Write-Host 'Tagged lab resource group already exists; not overwriting it.'
+} elseif ($existing.StatusCode -eq 404) {
+    $region = Read-Host 'Approved Azure region, for example northeurope'
+    Write-LabArm -Path "$AzureScope`?api-version=2021-04-01" -Body @{
+        location=$region; tags=@{Purpose='PIMLab'; Owner='lab-operator'}
+    }
+} else { throw $existing.Content }</code></pre>
+<h3>Automation / discover and patch the ARM policy</h3>
+<pre data-file="07-azure-policy.ps1"><code>Connect-LabAzure -ExpectedUserId $AdminId
+$AzureRoleGuid = 'b24988ac-6180-42a0-ab88-20f7382dd24c' # Contributor
+$AzureRoleDefinitionId = "/subscriptions/$SubscriptionId/providers/Microsoft.Authorization/roleDefinitions/$AzureRoleGuid"
+$pas = @(Get-LabArmItems "$AzureScope/providers/Microsoft.Authorization/roleManagementPolicyAssignments?api-version=2020-10-01")
+$pa = @($pas | Where-Object {
+    $_.properties.roleDefinitionId.Split('/')[-1] -eq $AzureRoleGuid
+})
+if ($pa.Count -ne 1) { throw 'Expected one Contributor policy at the exact RG scope.' }
+$AzurePolicyPath = $pa[0].properties.policyId
+$policy = Read-LabArm "$AzurePolicyPath`?api-version=2020-10-01"
+Save-LabBaseline 'azure-contributor-baseline.json' @{
+    tenantId=$TenantId; scope=$AzureScope; policyPath=$AzurePolicyPath
+    rules=$policy.properties.rules
+}
+$rules = $policy.properties.rules
+$changes = @()
+foreach ($spec in @(
+    @{id='Expiration_EndUser_Assignment'; duration='PT1H'},
+    @{id='Expiration_Admin_Eligibility'; duration='P7D'},
+    @{id='Expiration_Admin_Assignment'; duration='P1D'}
+)) {
+    $old = @($rules | Where-Object id -eq $spec.id)
+    if ($old.Count -ne 1) { throw "Missing ARM rule $($spec.id)" }
+    $changes += @{
+        id=$spec.id; ruleType='RoleManagementPolicyExpirationRule'
+        isExpirationRequired=$true; maximumDuration=$spec.duration; target=$old[0].target
+    }
+}
+$changes += @{
+    id='Enablement_EndUser_Assignment'; ruleType='RoleManagementPolicyEnablementRule'
+    target=($rules | Where-Object id -eq 'Enablement_EndUser_Assignment').target
+    enabledRules=@('MultiFactorAuthentication','Justification','Ticketing')
+}
+$changes += @{
+    id='Approval_EndUser_Assignment'; ruleType='RoleManagementPolicyApprovalRule'
+    target=($rules | Where-Object id -eq 'Approval_EndUser_Assignment').target
+    setting=@{
+        isApprovalRequired=$true; isApprovalRequiredForExtension=$false
+        isRequestorJustificationRequired=$true; approvalMode='SingleStage'
+        approvalStages=@(@{
+            approvalStageTimeOutInDays=1; isApproverJustificationRequired=$true
+            escalationTimeInMinutes=0; isEscalationEnabled=$false
+            primaryApprovers=@(@{id=$ApproverId; userType='User'; isBackup=$false})
+            escalationApprovers=@()
+        })
+    }
+}
+$mail = Read-Host 'Authorized lab notification mailbox'
+$notificationId = 'Notification_Admin_EndUser_Assignment'
+$changes += @{
+    id=$notificationId; ruleType='RoleManagementPolicyNotificationRule'
+    target=($rules | Where-Object id -eq $notificationId).target
+    notificationType='Email'; recipientType='Admin'; notificationLevel='All'
+    isDefaultRecipientsEnabled=$true; notificationRecipients=@($mail)
+}
+Write-LabArm -Method PATCH -Path "$AzurePolicyPath`?api-version=2020-10-01" `
+    -Body @{properties=@{rules=$changes}}
+Read-LabArm "$AzurePolicyPath`?api-version=2020-10-01" |
+    ConvertTo-Json -Depth 40 |
+    Set-Content (Join-Path $Evidence 'azure-policy-after.json') -Encoding utf8</code></pre>
+<div class="callout check"><strong>Checkpoint:</strong> you can explain the Graph <code>@odata.type</code> rules versus ARM <code>ruleType</code> rules and their different approver schemas. The policy path and scope in the saved baseline point only at the lab resource group.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-configure-role-settings">Azure policy portal settings</a><a href="https://learn.microsoft.com/en-us/rest/api/authorization/role-management-policies/update?view=rest-authorization-2020-10-01">ARM policy update and schema</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-assign-roles">Azure authority and assignment scope</a></p>
+</section>
+
+<section class="module" id="m08" data-title="08 / Azure eligibility, activation and approval">
+<div class="module-head"><div><div class="number">Module 08 / Azure elevation</div><h2>Azure eligibility, activation and approval</h2><div class="meta">Actors: Azure resource admin, operator, approver | 35 minutes | ARM v2020-10-01</div></div><label class="done"><input type="checkbox" data-complete="m08"> Complete</label></div>
+<ol class="steps">
+<li>As resource admin, open <strong>PIM &gt; Azure resources &gt; rg-pim-lab &gt; Roles &gt; Add assignments</strong>. Select <strong>Contributor</strong> and the operator. Choose <strong>Eligible</strong>, start now, end in seven days. Assign.</li>
+<li>As operator, first attempt to edit a harmless resource-group tag. It should fail or be unavailable. Open <strong>PIM &gt; My roles &gt; Azure resources &gt; Eligible assignments</strong>, locate the exact RG-scoped Contributor assignment, and select <strong>Activate</strong>.</li>
+<li>Use 30 minutes, reason <code>PIM-LAB: tag resource group</code>, and ticket <code>CHG-PIM-002</code>. Do not activate a similarly named subscription-wide role. If offered a reduced activation scope, inspect it; use the RG scope for this exercise.</li>
+<li>As approver, open <strong>Approve requests &gt; Azure resources</strong>, inspect the exact subscription/RG, approve with justification, and return as operator. After provisioning and session refresh, set <code>PIMLabActivation=verified</code> on the resource group. Do not change any other resource.</li>
+<li>Deactivate the role after the minimum interval. Retry the tag edit with refreshed credentials and record the denial. Repeat one denial and one pending cancellation if you want equivalent evidence to module 05.</li>
+<li>Inspect <strong>My roles</strong> for <strong>Extend</strong> or <strong>Renew</strong> on eligible/active-assigned Azure schedules. These change assignment lifetimes, not the role's activation cap. Resolve extension/renewal approvals in the portal rather than through the activation approval API.</li>
+</ol>
+<h3>Automation / resource administrator creates eligibility</h3>
+<pre data-file="08-azure-eligible.ps1"><code>Connect-LabAzure -ExpectedUserId $AdminId
+$AzureRoleGuid = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
+$AzureRoleDefinitionId = "/subscriptions/$SubscriptionId/providers/Microsoft.Authorization/roleDefinitions/$AzureRoleGuid"
+$requestName = [guid]::NewGuid().ToString()
+$body = @{properties=@{
+    principalId=$OperatorId; roleDefinitionId=$AzureRoleDefinitionId
+    requestType='AdminAssign'; justification='PIM-LAB: seven-day RG Contributor eligibility'
+    scheduleInfo=@{
+        startDateTime=[datetime]::UtcNow.ToString('o')
+        expiration=@{type='AfterDateTime'; endDateTime=[datetime]::UtcNow.AddDays(7).ToString('o')}
+    }
+}}
+$r = Write-LabArm -Path "$AzureScope/providers/Microsoft.Authorization/roleEligibilityScheduleRequests/$requestName`?api-version=2020-10-01" -Body $body
+if ($r) {
+    $r | ConvertTo-Json -Depth 20 |
+        Set-Content (Join-Path $Evidence 'azure-eligibility-request.json') -Encoding utf8
+    $r.properties | Select-Object status, targetRoleEligibilityScheduleId
+}</code></pre>
+<h3>Automation / operator activates and proves authorization</h3>
+<pre data-file="08-azure-activate.ps1"><code>Connect-LabAzure -ExpectedUserId $OperatorId
+$AzureRoleGuid = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
+$AzureRoleDefinitionId = "/subscriptions/$SubscriptionId/providers/Microsoft.Authorization/roleDefinitions/$AzureRoleGuid"
+$f = [uri]::EscapeDataString("principalId eq '$OperatorId'")
+$eligible = @(Get-LabArmItems "$AzureScope/providers/Microsoft.Authorization/roleEligibilityScheduleInstances?api-version=2020-10-01&amp;`$filter=$f" |
+    Where-Object {
+        $_.properties.roleDefinitionId.Split('/')[-1] -eq $AzureRoleGuid -and
+        $_.properties.scope -eq $AzureScope
+    })
+if ($eligible.Count -ne 1) { throw 'Expected one exact-scope Contributor eligibility instance.' }
+$AzureActivationName = [guid]::NewGuid().ToString()
+$body = @{properties=@{
+    principalId=$OperatorId; roleDefinitionId=$AzureRoleDefinitionId
+    linkedRoleEligibilityScheduleId=$eligible[0].properties.roleEligibilityScheduleId
+    requestType='SelfActivate'; justification='PIM-LAB: tag resource group'
+    ticketInfo=@{ticketSystem='LAB'; ticketNumber='CHG-PIM-002'}
+    scheduleInfo=@{
+        startDateTime=[datetime]::UtcNow.ToString('o')
+        expiration=@{type='AfterDuration'; duration='PT30M'}
+    }
+}}
+$r = Write-LabArm -Path "$AzureScope/providers/Microsoft.Authorization/roleAssignmentScheduleRequests/$AzureActivationName`?api-version=2020-10-01" -Body $body
+if ($r) {
+    $r | ConvertTo-Json -Depth 20 |
+        Set-Content (Join-Path $Evidence 'azure-activation-request.json') -Encoding utf8
+    $r.properties | Select-Object status, approvalId, targetRoleAssignmentScheduleId
+    Write-Host "Activation request name: $AzureActivationName"
+}</code></pre>
+<pre data-file="08-azure-verify-deactivate.ps1"><code># Only AFTER approval and provisioning. Run as operator.
+Connect-LabAzure -ExpectedUserId $OperatorId
+Write-LabArm -Method PATCH `
+    -Path "$AzureScope/providers/Microsoft.Resources/tags/default?api-version=2021-04-01" `
+    -Body @{operation='Merge'; properties=@{tags=@{PIMLabActivation='verified'}}}
+
+# After at least five minutes, deactivate the exact active assignment.
+$f = [uri]::EscapeDataString("principalId eq '$OperatorId'")
+$active = @(Get-LabArmItems "$AzureScope/providers/Microsoft.Authorization/roleAssignmentScheduleInstances?api-version=2020-10-01&amp;`$filter=$f" |
+    Where-Object {
+        $_.properties.roleDefinitionId.Split('/')[-1] -eq 'b24988ac-6180-42a0-ab88-20f7382dd24c' -and
+        $_.properties.scope -eq $AzureScope -and $_.properties.assignmentType -eq 'Activated'
+    })
+if ($active.Count -ne 1) { throw 'Expected one lab activation, not a standing assignment.' }
+$body = @{properties=@{
+    principalId=$OperatorId; roleDefinitionId=$active[0].properties.roleDefinitionId
+    requestType='SelfDeactivate'; justification='PIM-LAB: task finished'
+    targetRoleAssignmentScheduleId=$active[0].properties.roleAssignmentScheduleId
+}}
+$name = [guid]::NewGuid().ToString()
+Write-LabArm -Path "$AzureScope/providers/Microsoft.Authorization/roleAssignmentScheduleRequests/$name`?api-version=2020-10-01" -Body $body
+# A pending request instead uses POST .../roleAssignmentScheduleRequests/{name}/cancel
+# with api-version=2020-10-01; it does not use SelfDeactivate.</code></pre>
+<details><summary>Automation / Azure activation approval (ARM preview)</summary>
+<p>Read the activation request's <code>properties.approvalId</code>. The approval stage API is preview and uses a provider-root path, not a Graph path. Use only a stage assigned to the signed-in approver.</p>
+<pre data-file="08-azure-approve-preview.ps1"><code>Connect-LabAzure -ExpectedUserId $ApproverId
+$ApprovalId = Read-Host 'Approval GUID from the pending ARM activation request'
+$base = "/providers/Microsoft.Authorization/roleAssignmentApprovals/$ApprovalId"
+$approval = Read-LabArm "$base`?api-version=2021-01-01-preview"
+$stages = @($approval.properties.stages)
+$mine = @($stages | Where-Object {
+    $_.properties.assignedToMe -and $_.properties.status -eq 'InProgress'
+})
+if ($mine.Count -ne 1) { throw 'No unique in-progress stage assigned to this approver.' }
+$decision = Read-Host 'Approve or Deny'
+if ($decision -notin @('Approve','Deny')) { throw 'Invalid decision.' }
+$stagePath = $mine[0].id
+Write-LabArm -Method PATCH -Path "$stagePath`?api-version=2021-01-01-preview" `
+    -Body @{reviewResult=$decision; justification='PIM-LAB: reviewed RG activation'}</code></pre>
+</details>
+<div class="callout check"><strong>Checkpoint:</strong> approved RG-scoped activation permits a tag write; no subscription-wide permission was granted. Record ARM request name, linked eligibility schedule, active schedule, approval outcome, and denied access after deactivation.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-activate-your-roles">Azure activation</a><a href="https://learn.microsoft.com/en-us/rest/api/authorization/role-eligibility-schedule-requests/create?view=rest-authorization-2020-10-01">Eligibility payload</a><a href="https://learn.microsoft.com/en-us/rest/api/authorization/role-assignment-schedule-requests/create?view=rest-authorization-2020-10-01">Activation payload</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-approval-workflow">Approval preview and limitations</a></p>
+</section>
+
+<section class="module" id="m09" data-title="09 / Onboard PIM for Groups and set policies">
+<div class="module-head"><div><div class="number">Module 09 / groups</div><h2>Onboard PIM for Groups and set policies</h2><div class="meta">Actor: PRA for role-assignable group; appropriate group admin/owner otherwise | 30 minutes</div></div><label class="done"><input type="checkbox" data-complete="m09"> Complete</label></div>
+<div class="callout warning"><strong>One-way enrollment:</strong> a PIM-managed group cannot be offboarded from PIM. Use a new disposable group. Removing schedules does not disable PIM management. Dynamic, on-premises synchronized, and restricted-management AU groups are not suitable for this exercise.</div>
+<ol class="steps">
+<li>Open <strong>Entra ID &gt; Groups &gt; All groups &gt; New group</strong>. Choose <strong>Security</strong>, name <code>PIM-Lab-Readers</code>, description <code>Disposable PIM training group</code>, and <strong>Assigned</strong> membership. For the directory-role bundle in module 10, set <strong>Microsoft Entra roles can be assigned to the group = Yes</strong> at creation time. This cannot simply be switched on later.</li>
+<li>Set <code>pim-admin</code> as an active owner. Do not make the operator a direct member. Create the group and record its object ID. A normal security group is sufficient for Azure/SaaS grouping; role-assignability is required only when assigning Entra directory roles to the group.</li>
+<li>Open <strong>PIM &gt; Groups &gt; Discover groups</strong>, select the new group, choose <strong>Manage groups &gt; OK</strong>. Return to Groups and open it.</li>
+<li>Under <strong>Settings</strong> configure <strong>Member</strong>: maximum activation 1 hour, MFA, justification, approval by <code>pim-approver</code>, expiring eligible/active assignments, and notifications to the lab mailbox. Set 7-day eligible and 1-day active maxima if supported by the UI.</li>
+<li>Configure <strong>Owner</strong> separately, with the same controls. Never assume Member policy applies to Owner. Preserve the active administrator owner; eligible ownership is not a reliable recovery mechanism.</li>
+<li>Under <strong>Assignments &gt; Add assignments</strong>, choose <strong>Member</strong>, operator, <strong>Eligible</strong>, seven days. For a separate ownership demonstration you can later add an Owner eligibility to the operator, but do not activate Member and Owner simultaneously during baseline tests.</li>
+</ol>
+<h3>Automation / create the group, or adopt its recorded ID</h3>
+<pre data-file="09-create-role-assignable-group.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @(
+    'Group.ReadWrite.All','RoleManagement.ReadWrite.Directory'
+)
+$f = [uri]::EscapeDataString("displayName eq 'PIM-Lab-Readers'")
+$existing = @(Get-LabGraphItems "$Graph/groups?`$filter=$f")
+if ($existing.Count) { throw 'Group name already exists. Adopt its verified ID; do not create a duplicate.' }
+$body = @{
+    displayName='PIM-Lab-Readers'; description='Disposable PIM training group'
+    mailEnabled=$false; mailNickname="PIMLab$([guid]::NewGuid().ToString('N').Substring(0,8))"
+    securityEnabled=$true; isAssignableToRole=$true; groupTypes=@()
+    'owners@odata.bind'=@("$Graph/users/$AdminId")
+}
+$created = Write-LabGraph -Uri "$Graph/groups" -Body $body
+if ($created) {
+    $GroupId = $created.id
+    Write-Host "Record group ID: $GroupId"
+    $created | ConvertTo-Json -Depth 15 |
+        Set-Content (Join-Path $Evidence 'lab-group.json') -Encoding utf8
+}</code></pre>
+<h3>Automation / eligibility automatically enrolls the group</h3>
+<p>There is no need to invent an "enable PIM" Graph endpoint. Creating a supported schedule request automatically onboards an unmanaged group. After onboarding, rediscover policy IDs because they can change. If the portal already created the membership eligibility, skip the write and just inspect policies.</p>
+<pre data-file="09-group-eligible.ps1"><code>$GroupId = Read-Host 'Verified PIM-Lab-Readers object ID'
+Connect-LabGraph -ExpectedUserId $AdminId -Scopes @(
+    'PrivilegedEligibilitySchedule.ReadWrite.AzureADGroup',
+    'RoleManagementPolicy.ReadWrite.AzureADGroup'
+)
+$body = @{
+    action='adminAssign'; accessId='member'; principalId=$OperatorId; groupId=$GroupId
+    justification='PIM-LAB: seven-day eligible membership'
+    scheduleInfo=@{
+        startDateTime=[datetime]::UtcNow.ToString('o')
+        expiration=@{type='afterDateTime'; endDateTime=[datetime]::UtcNow.AddDays(7).ToString('o')}
+    }
+}
+Write-LabGraph -Uri "$Graph/identityGovernance/privilegedAccess/group/eligibilityScheduleRequests" -Body $body
+# Finish onboarding before running the policy-discovery block below.</code></pre>
+<pre data-file="09-group-policies.ps1"><code># Run only after group onboarding. Same admin connection as above.
+$f = [uri]::EscapeDataString("scopeId eq '$GroupId' and scopeType eq 'Group'")
+$pas = @(Get-LabGraphItems "$Graph/policies/roleManagementPolicyAssignments?`$filter=$f")
+foreach ($access in @('member','owner')) {
+    $pa = @($pas | Where-Object roleDefinitionId -eq $access)
+    if ($pa.Count -ne 1) { throw "Expected one $access policy." }
+    $groupPolicyId = $pa[0].policyId
+    $base = "$Graph/policies/roleManagementPolicies/$groupPolicyId/rules"
+    $rules = @(Get-LabGraphItems $base)
+    Save-LabBaseline "group-$GroupId-$access-baseline.json" @{
+        tenantId=$TenantId; groupId=$GroupId; policyId=$groupPolicyId; rules=$rules
+    }
+    foreach ($spec in @(
+        @{id='Expiration_EndUser_Assignment'; duration='PT1H'},
+        @{id='Expiration_Admin_Eligibility'; duration='P7D'},
+        @{id='Expiration_Admin_Assignment'; duration='P1D'}
+    )) {
+        Write-LabGraph -Method PATCH -Uri "$base/$($spec.id)" -Body @{
+            '@odata.type'='#microsoft.graph.unifiedRoleManagementPolicyExpirationRule'
+            id=$spec.id; target=($rules | Where-Object id -eq $spec.id).target
+            isExpirationRequired=$true; maximumDuration=$spec.duration
+        }
+    }
+    Write-LabGraph -Method PATCH -Uri "$base/Enablement_EndUser_Assignment" -Body @{
+        '@odata.type'='#microsoft.graph.unifiedRoleManagementPolicyEnablementRule'
+        id='Enablement_EndUser_Assignment'
+        target=($rules | Where-Object id -eq 'Enablement_EndUser_Assignment').target
+        enabledRules=@('MultiFactorAuthentication','Justification')
+    }
+    Write-LabGraph -Method PATCH -Uri "$base/Approval_EndUser_Assignment" -Body @{
+        '@odata.type'='#microsoft.graph.unifiedRoleManagementPolicyApprovalRule'
+        id='Approval_EndUser_Assignment'
+        target=($rules | Where-Object id -eq 'Approval_EndUser_Assignment').target
+        setting=@{
+            isApprovalRequired=$true; isApprovalRequiredForExtension=$false
+            isRequestorJustificationRequired=$true; approvalMode='SingleStage'
+            approvalStages=@(@{
+                approvalStageTimeOutInDays=1; isApproverJustificationRequired=$true
+                escalationTimeInMinutes=0; isEscalationEnabled=$false
+                primaryApprovers=@(@{
+                    '@odata.type'='#microsoft.graph.singleUser'; userId=$ApproverId
+                })
+                escalationApprovers=@()
+            })
+        }
+    }
+    $mail = Read-Host "Notification mailbox for $access activations"
+    $nid = 'Notification_Admin_EndUser_Assignment'
+    Write-LabGraph -Method PATCH -Uri "$base/$nid" -Body @{
+        '@odata.type'='#microsoft.graph.unifiedRoleManagementPolicyNotificationRule'
+        id=$nid; target=($rules | Where-Object id -eq $nid).target
+        notificationType='Email'; recipientType='Admin'; notificationLevel='All'
+        isDefaultRecipientsEnabled=$true; notificationRecipients=@($mail)
+    }
+}</code></pre>
+<div class="callout check"><strong>Checkpoint:</strong> Member and Owner have independent policies. The operator is eligible but absent from the group's active <strong>Members</strong> list. The active admin owner remains. No group has been added to a privileged role accidentally.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/groups-discover-groups">Portal onboarding and restrictions</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/groups-role-settings">Member/Owner policies</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/groups-assign-member-owner">Assign eligible access</a><a href="https://learn.microsoft.com/en-us/graph/api/resources/privilegedidentitymanagement-for-groups-api-overview?view=graph-rest-1.0">Automatic onboarding</a><a href="https://learn.microsoft.com/en-us/graph/api/privilegedaccessgroup-post-eligibilityschedulerequests?view=graph-rest-1.0">Group eligibility API</a></p>
+</section>
+
+<section class="module" id="m10" data-title="10 / Activate membership, ownership and role bundles">
+<div class="module-head"><div><div class="number">Module 10 / group elevation</div><h2>Activate membership, ownership and role bundles</h2><div class="meta">Actors: operator, approver, PRA | 30 minutes</div></div><label class="done"><input type="checkbox" data-complete="m10"> Complete</label></div>
+<ol class="steps">
+<li>As operator open <strong>PIM &gt; My roles &gt; Groups &gt; Eligible assignments</strong>. Select the lab group's <strong>Member</strong> eligibility and activate for 30 minutes with justification.</li>
+<li>As approver open <strong>Approve requests &gt; Groups</strong>, inspect the requested relationship and group, and approve. Return as admin to <strong>Entra ID &gt; Groups &gt; PIM-Lab-Readers &gt; Members</strong>. The operator should now be an active member.</li>
+<li>Deactivate membership after five minutes. Verify the operator disappears from active Members but remains in PIM eligible assignments. Test one denial as in module 05.</li>
+<li>Optional ownership exercise: as admin add a seven-day <strong>Owner</strong> eligibility for the operator. Activate it through the separate owner policy, confirm the operator appears under <strong>Owners</strong>, then deactivate. Being an owner does not itself make the user a member or grant directory roles assigned to members.</li>
+<li>Role-bundle exercise: first ensure the operator's direct Reports Reader activation is inactive. As PRA, open <strong>Entra ID &gt; Roles &amp; admins &gt; Reports Reader &gt; Add assignments</strong>, select the role-assignable lab group, and make the group <strong>active assigned</strong> for no more than one day. The policy in module 03 requires expiration. Use PIM's active-assignment flow if the standard blade does not offer a duration.</li>
+<li>Reactivate group membership. Verify role-derived reporting access via the group. You are activating <em>membership</em>, not individually activating Reports Reader. The directory role's self-activation approval does not substitute for the group's membership approval. Avoid making both group membership and the group's role assignment eligible, which creates confusing nested activation dependencies.</li>
+<li>Deactivate membership and remove the group's active directory-role assignment when the test ends. Check for direct membership edits by group owners: those are separate access paths that can bypass the intended just-in-time membership workflow and must be monitored.</li>
+</ol>
+<h3>Automation / Member or Owner activation</h3>
+<pre data-file="10-group-activate.ps1"><code>$GroupId = Read-Host 'Verified lab group object ID'
+Connect-LabGraph -ExpectedUserId $OperatorId -Scopes @(
+    'PrivilegedAssignmentSchedule.ReadWrite.AzureADGroup'
+)
+$access = Read-Host 'member or owner (must have matching eligibility)'
+if ($access -notin @('member','owner')) { throw 'Invalid relationship.' }
+$body = @{
+    action='selfActivate'; accessId=$access; principalId=$OperatorId; groupId=$GroupId
+    justification="PIM-LAB: test $access activation"
+    scheduleInfo=@{
+        startDateTime=[datetime]::UtcNow.ToString('o')
+        expiration=@{type='afterDuration'; duration='PT30M'}
+    }
+}
+$groupRequest = Write-LabGraph `
+    -Uri "$Graph/identityGovernance/privilegedAccess/group/assignmentScheduleRequests" -Body $body
+if ($groupRequest) {
+    $groupRequest | ConvertTo-Json -Depth 20 |
+        Set-Content (Join-Path $Evidence "group-$access-activation.json") -Encoding utf8
+    $groupRequest | Select-Object id, status, approvalId, targetScheduleId
+}
+# After approval, provisioning, and at least five minutes, deactivate:
+# $body.action = 'selfDeactivate'
+# $body.Remove('scheduleInfo')
+# Write-LabGraph -Uri "$Graph/identityGovernance/privilegedAccess/group/assignmentScheduleRequests" -Body $body</code></pre>
+<pre data-file="10-group-bundle.ps1"><code># Run as admin; group must be role-assignable.
+Connect-LabGraph -ExpectedUserId $AdminId -Scopes @(
+    'RoleAssignmentSchedule.ReadWrite.Directory'
+)
+$GroupId = Read-Host 'Verified role-assignable lab group object ID'
+$DirectoryRoleId = Read-Host 'Reports Reader roleDefinitionId'
+$body = @{
+    action='adminAssign'; principalId=$GroupId; roleDefinitionId=$DirectoryRoleId
+    directoryScopeId='/'; justification='PIM-LAB: one-day group role bundle'
+    scheduleInfo=@{
+        startDateTime=[datetime]::UtcNow.ToString('o')
+        expiration=@{type='afterDuration'; duration='P1D'}
+    }
+}
+Write-LabGraph -Uri "$Graph/roleManagement/directory/roleAssignmentScheduleRequests" -Body $body
+# Remove the group-role binding after the exercise (wait at least five minutes):
+# $body.action = 'adminRemove'
+# $body.Remove('scheduleInfo')
+# Write-LabGraph -Uri "$Graph/roleManagement/directory/roleAssignmentScheduleRequests" -Body $body</code></pre>
+<details><summary>Automation / group approval (Graph beta)</summary>
+<pre data-file="10-group-approve-beta.ps1"><code>Connect-LabGraph -ExpectedUserId $ApproverId -Scopes @(
+    'PrivilegedAssignmentSchedule.ReadWrite.AzureADGroup'
+)
+$GroupRequestId = Read-Host 'Exact group activation request ID'
+$req = Invoke-MgGraphRequest -Method GET `
+    -Uri "$Graph/identityGovernance/privilegedAccess/group/assignmentScheduleRequests/$GroupRequestId"
+if ($req.principalId -ne $OperatorId -or $req.status -ne 'PendingApproval') {
+    throw 'Unexpected request; inspect in portal.'
+}
+$aid = $req.approvalId
+if (-not $aid) { throw 'No approval ID on this request.' }
+$base = "$GraphBeta/identityGovernance/privilegedAccess/group/assignmentApprovals/$aid"
+$approval = Invoke-MgGraphRequest -Method GET -Uri $base
+$mine = @($approval.steps | Where-Object { $_.assignedToMe -and $_.status -eq 'InProgress' })
+if ($mine.Count -ne 1) { throw 'Expected one pending step for this approver.' }
+$decision = Read-Host 'Approve or Deny'
+if ($decision -notin @('Approve','Deny')) { throw 'Invalid decision.' }
+Write-LabGraph -Method PATCH -Uri "$base/steps/$($mine[0].id)" `
+    -Body @{reviewResult=$decision; justification='PIM-LAB: reviewed group request'}</code></pre>
+</details>
+<div class="callout check"><strong>Checkpoint:</strong> eligible membership is not listed as active membership; activation adds it and deactivation removes it. Owner and Member are distinct. Group role-bundling is governed at the membership boundary and has been torn down after testing.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/groups-activate-roles">Activate group access</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/groups-approval-workflow">Group approvals</a><a href="https://learn.microsoft.com/en-us/graph/api/privilegedaccessgroup-post-assignmentschedulerequests?view=graph-rest-1.0">Assignment requests</a><a href="https://learn.microsoft.com/en-us/graph/api/approvalstep-update?view=graph-rest-beta">Beta approval resource</a><a href="https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/groups-concept">Role-assignable groups</a></p>
+</section>
+
+<section class="module" id="m11" data-title="11 / Conditional Access authentication context">
+<div class="module-head"><div><div class="number">Module 11 / advanced activation controls</div><h2>Conditional Access authentication context</h2><div class="meta">Actors: Conditional Access Administrator + PRA | 30 minutes | Optional, isolated tenant only</div></div><label class="done"><input type="checkbox" data-complete="m11"> Complete</label></div>
+<div class="callout warning"><strong>Lockout risk.</strong> Test a policy scoped only to the operator. Use an unused authentication-context ID. Exclude emergency accounts and keep an independently authenticated recovery administrator. A context linked from PIM is not a complete control unless an enabled Conditional Access policy actually targets it.</div>
+<ol class="steps">
+<li>As Conditional Access Administrator, open <strong>Entra ID &gt; Conditional Access &gt; Authentication context</strong>. Create/publish <code>PIM-Lab-StrongAuth</code>, note its <code>cN</code> ID, and do not reuse an existing application's context.</li>
+<li>Under <strong>Conditional Access &gt; Policies &gt; New policy</strong>, name it <code>PIM-Lab-Context</code>. Include only <code>pim-operator</code>; explicitly exclude established emergency accounts. Under <strong>Target resources</strong>, select <strong>Authentication context</strong> and the new context.</li>
+<li>Under <strong>Grant</strong>, require an <strong>authentication strength</strong> that the operator can satisfy (for example phishing-resistant MFA after a passkey/FIDO2 or other suitable method is provisioned). Do not require a compliant device unless the lab has one.</li>
+<li>Start in <strong>Report-only</strong>, inspect sign-in/What If evaluation, then enable <strong>On</strong> only after verifying recovery and a working method. Report-only does not enforce the control and cannot prove an activation is blocked.</li>
+<li>As PRA edit the Reports Reader PIM activation policy, choose <strong>On activation, require Microsoft Entra Conditional Access authentication context</strong>, and select the context. Activate as operator in a fresh session, satisfy the policy, approve, then deactivate.</li>
+<li>Negative test: use a session without the required strength and verify the challenge/block in sign-in details. Record the Conditional Access result and context claim. If a valid claim already exists, another prompt may not occur. Restore the original PIM authentication-context rule before disabling/deleting the CA policy and context.</li>
+</ol>
+<h3>Automation / bind an already-created and tested context</h3>
+<p>This block performs only the PIM-side binding. Creating a CA policy requires a separately authorized identity-security change; the optional block below shows that equivalent. Authentication-method registration remains a prerequisite. Do not confuse a PIM binding with deployment of an enforcing CA policy.</p>
+<pre data-file="11-bind-authentication-context.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @(
+    'RoleManagementPolicy.ReadWrite.Directory'
+)
+$DirectoryPolicyId = Read-Host 'Reports Reader policy ID saved in module 03'
+$ContextId = Read-Host 'Published and tested lab authentication context ID, for example c12'
+if ($ContextId -notmatch '^c([1-9]|1[0-9]|2[0-5])$') { throw 'Expected an authentication context ID c1-c25.' }
+$uri = "$Graph/policies/roleManagementPolicies/$DirectoryPolicyId/rules/AuthenticationContext_EndUser_Assignment"
+$original = Invoke-MgGraphRequest -Method GET -Uri $uri
+Save-LabBaseline 'authentication-context-rule-baseline.json' @{
+    tenantId=$TenantId; policyId=$DirectoryPolicyId; rule=$original
+}
+Write-LabGraph -Method PATCH -Uri $uri -Body @{
+    '@odata.type'='#microsoft.graph.unifiedRoleManagementPolicyAuthenticationContextRule'
+    id='AuthenticationContext_EndUser_Assignment'
+    target=$original.target; isEnabled=$true; claimValue=$ContextId
+}</code></pre>
+<details><summary>Automation / create a lab context and operator-only CA policy</summary>
+<p>Only run this as a separately authorized Conditional Access Administrator. Supply that lab actor's ID, two existing emergency-account IDs to exclude, and an unused context ID. The example uses the built-in phishing-resistant authentication strength. Register a qualifying method <em>before</em> enabling enforcement. The policy is created report-only; you must inspect evaluation and deliberately enable it in the portal. Do not run if the names or context already exist.</p>
+<pre data-file="11-create-context-ca.ps1"><code>$CaAdminId = Read-Host 'Object ID of authorized lab Conditional Access Administrator'
+Connect-LabGraph -ExpectedUserId $CaAdminId -Scopes @(
+    'Policy.Read.All', 'Policy.ReadWrite.ConditionalAccess', 'AuthenticationContext.ReadWrite.All'
+)
+$ContextId = Read-Host 'Unused c1-c25 context ID'
+if ($ContextId -notmatch '^c([1-9]|1[0-9]|2[0-5])$') { throw 'Invalid context ID.' }
+$emergencyIds = @(
+    (Read-Host 'Existing emergency-account object ID 1'),
+    (Read-Host 'Existing emergency-account object ID 2')
+)
+if ($OperatorId -in $emergencyIds -or $emergencyIds -contains '') {
+    throw 'Invalid emergency exclusions.'
+}
+$contexts = @(Get-LabGraphItems "$Graph/identity/conditionalAccess/authenticationContextClassReferences")
+if ($ContextId -in $contexts.id) { throw 'Context ID already exists. Do not overwrite.' }
+Write-LabGraph -Method PATCH -Uri "$Graph/identity/conditionalAccess/authenticationContextClassReferences/$ContextId" -Body @{
+    displayName='PIM-Lab-StrongAuth'
+    description='Disposable operator-only PIM activation control'; isAvailable=$true
+}
+# Run the next write only after context creation has actually succeeded.
+$policies = @(Get-LabGraphItems "$Graph/identity/conditionalAccess/policies")
+if ('PIM-Lab-Context' -in $policies.displayName) { throw 'Lab policy name already exists.' }
+$policy = Write-LabGraph -Uri "$Graph/identity/conditionalAccess/policies" -Body @{
+    displayName='PIM-Lab-Context'; state='enabledForReportingButNotEnforced'
+    conditions=@{
+        users=@{includeUsers=@($OperatorId); excludeUsers=$emergencyIds}
+        applications=@{includeAuthenticationContextClassReferences=@($ContextId)}
+        clientAppTypes=@('all')
+    }
+    grantControls=@{
+        operator='AND'
+        authenticationStrength=@{id='00000000-0000-0000-0000-000000000004'}
+    }
+}
+if ($policy) {
+    $policy | ConvertTo-Json -Depth 30 |
+        Set-Content (Join-Path $Evidence 'lab-ca-policy.json') -Encoding utf8
+    Write-Host "Record CA policy ID $($policy.id); report-only is NOT enforcement."
+}</code></pre>
+</details>
+<div class="callout check"><strong>Checkpoint:</strong> an enabled CA policy, not just a PIM checkbox, enforces the named context. Save one successful evaluation and one challenged/blocked attempt without broadening the policy to all users.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-how-to-change-default-settings">PIM authentication context</a><a href="https://learn.microsoft.com/en-us/graph/api/resources/unifiedrolemanagementpolicyauthenticationcontextrule?view=graph-rest-1.0">Context rule</a><a href="https://learn.microsoft.com/en-us/graph/api/authenticationcontextclassreference-update?view=graph-rest-1.0">Create/update context</a><a href="https://learn.microsoft.com/en-us/graph/api/conditionalaccessroot-post-policies?view=graph-rest-1.0">Create CA policy</a><a href="https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-strengths">Authentication strengths</a></p>
+</section>
+
+<section class="module" id="m12" data-title="12 / Review privileged access and apply decisions">
+<div class="module-head"><div><div class="number">Module 12 / certification</div><h2>Review privileged access and apply decisions</h2><div class="meta">Actors: PRA, designated reviewer, Azure resource administrator | 30 minutes + review completion</div></div><label class="done"><input type="checkbox" data-complete="m12"> Complete</label></div>
+<div class="callout warning"><strong>Reviews can revoke access.</strong> Scope reviews to the test role/group and inspect every decision before applying results. Start with auto-apply disabled and "no change" for unanswered reviews. Do not include recovery roles. A normal group-membership review is not the same as a review of PIM eligible membership.</div>
+<ol class="steps">
+<li>As PRA open <strong>PIM &gt; Microsoft Entra roles &gt; Access reviews &gt; New</strong>. Name it <code>PIM-Lab-ReportsReader-Review</code>. Choose only <strong>Reports Reader</strong>, a one-time review beginning today, and a short supported review period (for example one day). Include the intended eligible/active assignment types rather than assuming a default.</li>
+<li>Choose <strong>Selected users</strong> as reviewers and specify <code>pim-approver</code>. Inspect self-review and manager/fallback options, but use an independent named reviewer for the lab. Disable <strong>Auto apply results</strong>; choose <strong>No change</strong> when reviewers do not respond. Enable justification, reminders, and email as appropriate. Create.</li>
+<li>As reviewer use the review email or the <strong>My Access &gt; Access reviews</strong> experience to open the role review. Confirm the assignment being reviewed. Approve an entitlement still required; deny only a disposable comparison entitlement. Submit a justification.</li>
+<li>As admin return to the review, inspect results, and <strong>Stop</strong> the current review instance if you do not want to wait. Select <strong>Apply results</strong> only after checking all decisions. Verify the denied assignment was removed in the appropriate eligible/active view. A completed review with unapplied decisions has not necessarily revoked access.</li>
+<li>Repeat from <strong>PIM &gt; Azure resources &gt; lab subscription &gt; Access reviews</strong> for the lab Azure role if offered. Azure review administration is subscription-oriented; do not expect an RG blade to expose the same create action. Filter to the lab principal/role/scope where supported. If the portal cannot isolate the lab assignment safely, inspect without creating the review.</li>
+<li>For the <strong>PIM for Groups access-review preview</strong>, use an authorized Identity Governance Administrator: <strong>ID Governance &gt; Access reviews &gt; New access review &gt; Review access to a resource type &gt; Teams + Groups &gt; Select Teams + groups</strong>. Select only the PIM-managed lab group, with user scope <strong>Everyone</strong>. The documented preview includes eligible and active group members; verify both in the generated review. Do not assume it also certifies eligible ownership. If choosing group owners as reviewers, specify a fallback reviewer; only active owners are assigned. Check Governance/Suite licensing and preview availability.</li>
+<li>Inspect recurring review settings (weekly/monthly/quarterly), multi-stage options if licensed, recommendations, fallback reviewers, and the difference between updating a current instance and a series. Do not leave an unnecessary recurring review running after the lab.</li>
+</ol>
+<h3>Automation / inspect portal-created reviews and complete an instance</h3>
+<p>Use Graph for directory/group review objects; Azure resource reviews use a different ARM API. The following retrieves the exact review created in the portal, including its scope. This preserves the service-generated assignment-type query rather than guessing that a standard group review covers eligibility.</p>
+<pre data-file="12-directory-review-inspect.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @('AccessReview.ReadWrite.All')
+$reviews = @(Get-LabGraphItems "$Graph/identityGovernance/accessReviews/definitions")
+$review = @($reviews | Where-Object displayName -eq 'PIM-Lab-ReportsReader-Review')
+if ($review.Count -ne 1) { throw 'Expected exactly one portal-created lab review.' }
+$ReviewId = $review[0].id
+$definition = Invoke-MgGraphRequest -Method GET `
+    -Uri "$Graph/identityGovernance/accessReviews/definitions/$ReviewId"
+$definition | ConvertTo-Json -Depth 40 |
+    Set-Content (Join-Path $Evidence 'directory-review-definition.json') -Encoding utf8
+$definition.scope | ConvertTo-Json -Depth 20
+Get-LabGraphItems "$Graph/identityGovernance/accessReviews/definitions/$ReviewId/instances" |
+    Select-Object id, status, startDateTime, endDateTime
+# Record one exact instance ID. Do not select "the first" instance of a series.</code></pre>
+<details><summary>Automation / create a one-time privileged-role review directly</summary>
+<p>Use this instead of portal creation, not as an additional copy. The scope covers users and groups assigned the single Reports Reader role, including eligible and active assignments, using Microsoft's privileged-role review scope model. Inspect every assignee first; this is only safe in the disposable tenant. It is not a generic group-membership review.</p>
+<pre data-file="12-directory-review-create.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @('AccessReview.ReadWrite.All')
+$DirectoryRoleId = Read-Host 'Reports Reader roleDefinitionId from module 02'
+$body = @{
+    displayName='PIM-Lab-ReportsReader-Review'
+    descriptionForAdmins='Disposable role certification exercise'
+    descriptionForReviewers='Review only lab assignments. Provide a reason.'
+    scope=@{
+        '@odata.type'='#microsoft.graph.principalResourceMembershipsScope'
+        principalScopes=@(
+            @{'@odata.type'='#microsoft.graph.accessReviewQueryScope'; query='/users'; queryType='MicrosoftGraph'},
+            @{'@odata.type'='#microsoft.graph.accessReviewQueryScope'; query='/groups'; queryType='MicrosoftGraph'}
+        )
+        resourceScopes=@(@{
+            '@odata.type'='#microsoft.graph.accessReviewQueryScope'
+            query="/roleManagement/directory/roleDefinitions/$DirectoryRoleId"
+            queryType='MicrosoftGraph'
+        })
+    }
+    reviewers=@(@{query="/users/$ApproverId"; queryType='MicrosoftGraph'})
+    settings=@{
+        autoApplyDecisionsEnabled=$false; defaultDecisionEnabled=$false; defaultDecision='None'
+        justificationRequiredOnApproval=$true; mailNotificationsEnabled=$true
+        reminderNotificationsEnabled=$true; recommendationsEnabled=$false
+        instanceDurationInDays=1
+        recurrence=@{
+            pattern=@{type='daily'; interval=1}
+            range=@{type='numbered'; startDate=[datetime]::UtcNow.ToString('yyyy-MM-dd'); numberOfOccurrences=1}
+        }
+    }
+}
+Write-LabGraph -Uri "$Graph/identityGovernance/accessReviews/definitions" -Body $body</code></pre>
+</details>
+<pre data-file="12-review-decide-apply.ps1"><code># Reviewer terminal: only decide an item assigned to you.
+Connect-LabGraph -ExpectedUserId $ApproverId -Scopes @('AccessReview.ReadWrite.All')
+$ReviewId = Read-Host 'Exact lab review definition ID'
+$InstanceId = Read-Host 'Exact current instance ID'
+$base = "$Graph/identityGovernance/accessReviews/definitions/$ReviewId/instances/$InstanceId"
+Get-LabGraphItems "$base/decisions" |
+    Select-Object id, decision, principal, resource
+$DecisionId = Read-Host 'Decision ID for the exact lab assignment'
+$decision = Read-Host 'Approve or Deny'
+if ($decision -notin @('Approve','Deny')) { throw 'Invalid decision.' }
+Write-LabGraph -Method PATCH -Uri "$base/decisions/$DecisionId" `
+    -Body @{decision=$decision; justification='PIM-LAB: reviewed continuing business need'}
+
+# ADMIN terminal: reconnect separately, reconstruct $base with the SAME IDs.
+# Connect-LabGraph -ExpectedUserId $AdminId -Scopes @('AccessReview.ReadWrite.All')
+# Write-LabGraph -Uri "$base/stop"
+# Inspect all decisions and status, then explicitly apply:
+# Write-LabGraph -Uri "$base/applyDecisions"
+# Re-read the instance until Applied; verify actual assignment removal.</code></pre>
+<h3>Automation / Azure review definition <span class="small">(ARM preview)</span></h3>
+<p>As resource administrator, inspect the subscription review created in the portal. For a scripted equivalent, clone only its <code>properties.scope</code>, reviewers, and settings after auditing that the scope excludes all non-lab assignments. Do not route Azure review requests to Graph.</p>
+<pre data-file="12-azure-review-preview.ps1"><code>Connect-LabAzure -ExpectedUserId $AdminId
+$base = "/subscriptions/$SubscriptionId/providers/Microsoft.Authorization/accessReviewScheduleDefinitions"
+$AzureReviewId = Read-Host 'Exact Azure lab review definition GUID from the portal'
+$review = Read-LabArm "$base/$AzureReviewId`?api-version=2021-12-01-preview"
+$review | ConvertTo-Json -Depth 40 |
+    Set-Content (Join-Path $Evidence 'azure-review-definition.json') -Encoding utf8
+$review.properties.scope | ConvertTo-Json -Depth 20 | Write-Host
+# Optional create alternative, only after validating the captured scope:
+if ((Read-Host 'Create a second review with this exact verified lab scope? Type CREATE') -ceq 'CREATE') {
+    $settings = $review.properties.settings
+    $settings.autoApplyDecisionsEnabled = $false
+    $settings.defaultDecisionEnabled = $false
+    $settings.Remove('defaultDecision') # ARM does not use Graph's 'None' enum value.
+    $settings.recurrence = @{
+        pattern=@{type='weekly'; interval=1}
+        range=@{type='numbered'; startDate=[datetime]::UtcNow.ToString('o'); numberOfOccurrences=1}
+    }
+    $settings.instanceDurationInDays = 1
+    $newId = [guid]::NewGuid().ToString()
+    Write-LabArm -Path "$base/$newId`?api-version=2021-12-01-preview" -Body @{
+        displayName='PIM-Lab-Azure-Review-Automated'
+        descriptionForAdmins='Disposable Azure role review'
+        descriptionForReviewers='Review only the isolated lab assignment'
+        scope=$review.properties.scope; reviewers=$review.properties.reviewers
+        settings=$settings
+    }
+}
+# Stop/apply Azure review instances through the portal in this lab.
+# Graph review instance actions above do NOT operate on these ARM resources.</code></pre>
+<div class="callout check"><strong>Checkpoint:</strong> retain definition scope, reviewer decision, completion/application state, and final assignment state. Restore main operator eligibility if a review intentionally revoked it and later modules need it. Never re-add a denied entitlement without understanding why it was denied.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-create-roles-and-resource-roles-review">Create privileged-role reviews</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-complete-roles-and-resource-roles-review">Complete/apply reviews</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/create-access-review-pim-for-groups">PIM group review preview</a><a href="https://learn.microsoft.com/en-us/graph/tutorial-accessreviews-roleassignments">Privileged-role scope model</a><a href="https://learn.microsoft.com/en-us/graph/api/accessreviewset-post-definitions?view=graph-rest-1.0">Create Graph definitions</a><a href="https://learn.microsoft.com/en-us/graph/api/accessreviewinstancedecisionitem-update?view=graph-rest-1.0">Reviewer decision</a><a href="https://learn.microsoft.com/en-us/graph/api/accessreviewinstance-applydecisions?view=graph-rest-1.0">Apply decisions</a><a href="https://learn.microsoft.com/en-us/rest/api/authorization/access-review-schedule-definitions/create-or-update-by-id?view=rest-authorization-2021-12-01-preview">Azure review API</a></p>
+</section>
+
+<section class="module" id="m13" data-title="13 / Investigate alerts and remediate deliberately">
+<div class="module-head"><div><div class="number">Module 13 / detection</div><h2>Investigate alerts and remediate deliberately</h2><div class="meta">Actor: PRA for changes; supported reader for inspection | 20 minutes | Graph beta automation</div></div><label class="done"><input type="checkbox" data-complete="m13"> Complete</label></div>
+<div class="route">PIM &gt; Microsoft Entra roles &gt; Alerts</div>
+<ol class="steps">
+<li>Open directory-role <strong>Alerts</strong>. Inspect available detections, for example excessive privileged assignments, unused roles, roles assigned outside PIM, and roles that do not require MFA. Different tenants may show different incident counts. Do not create a Global Administrator merely to trigger an alert.</li>
+<li>Select one alert and inspect definition, severity, affected users/roles, incident details, and suggested remediation. Record the relevant lab object and why the rule fired. If there are no incidents, save the empty state and explain the rule rather than manufacturing a risky condition.</li>
+<li>Open alert <strong>Settings</strong> and inspect enabled state and thresholds. Capture the current value; do not disable broad detections to make the dashboard green. If demonstrating a threshold change in the disposable tenant, restore it immediately afterward.</li>
+<li>For a lab-only incident, review the exact proposed remediation, execute it in the portal, and verify the actual assignment/policy. A dismiss action is not remediation. Refresh/rescan and confirm whether the incident reappears.</li>
+<li>Inspect the Azure resource alert experience separately where exposed. Do not assume directory security alert APIs cover Azure roles or group alerts. Notifications are also not the same feature as security alerts.</li>
+</ol>
+<h3>Automation / list, inspect, refresh, optionally remediate</h3>
+<pre data-file="13-alerts-beta.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @('RoleManagementAlert.ReadWrite.Directory')
+$base = "$GraphBeta/identityGovernance/roleManagementAlerts"
+$f = [uri]::EscapeDataString("scopeId eq '/' and scopeType eq 'DirectoryRole'")
+$alerts = @(Get-LabGraphItems "$base/alerts?`$filter=$f")
+$alerts | Select-Object id, alertDefinitionId, isActive, incidentCount
+$alerts | ConvertTo-Json -Depth 20 |
+    Set-Content (Join-Path $Evidence 'pim-alerts.json') -Encoding utf8
+$AlertId = Read-Host 'Exact alert ID to inspect (not an incident ID)'
+$alert = Invoke-MgGraphRequest -Method GET `
+    -Uri "$base/alerts/$AlertId`?`$expand=alertDefinition,alertConfiguration,alertIncidents"
+$alert | ConvertTo-Json -Depth 30 | Write-Host
+
+# Rescan is asynchronous. Inspect response Location header and operation status.
+Write-LabGraph -Uri "$base/alerts/$AlertId/refresh"
+# Optional remediation removes/changes access according to the alert definition.
+# First verify the incident refers ONLY to a disposable lab assignment:
+# $IncidentId = Read-Host 'Verified lab incident ID'
+# Write-LabGraph -Uri "$base/alerts/$AlertId/alertIncidents/$IncidentId/remediate"
+#
+# Deliberately NOT run: PATCH alert {isActive:false}.
+# Dismissal can stop scanning this alert type; it is not an access fix.</code></pre>
+<details><summary>Automation / inspect and change only a documented configuration field</summary>
+<pre data-file="13-alert-config-beta.ps1"><code># Same admin connection. Exact configuration ID comes from the inspected alert.
+$ConfigId = Read-Host 'Exact alert configuration ID'
+$uri = "$GraphBeta/identityGovernance/roleManagementAlerts/alertConfigurations/$ConfigId"
+$config = Invoke-MgGraphRequest -Method GET -Uri $uri
+Save-LabBaseline 'alert-configuration-baseline.json' @{
+    tenantId=$TenantId; configId=$ConfigId; configuration=$config
+}
+$config | ConvertTo-Json -Depth 20 | Write-Host
+# Example ONLY for the too-many-global-admins configuration type.
+# Do not apply a threshold payload to a different alert configuration.
+if ($config.'@odata.type' -ne '#microsoft.graph.tooManyGlobalAdminsAssignedToTenantAlertConfiguration') {
+    throw 'This teaching example is only for the too-many-global-admins type.'
+}
+$threshold = [int](Read-Host 'Approved lab global-admin count threshold (do not add any admins)')
+Write-LabGraph -Method PATCH -Uri $uri -Body @{
+    '@odata.type'=$config.'@odata.type'; isEnabled=$true
+    globalAdminCountThreshold=$threshold
+    percentageOfGlobalAdminsOutOfRolesThreshold=$config.percentageOfGlobalAdminsOutOfRolesThreshold
+}
+# Restore the recorded isEnabled and both thresholds after inspecting the result.</code></pre>
+</details>
+<div class="callout check"><strong>Checkpoint:</strong> distinguish alert configuration, alert instance, and incident. Demonstrate inspection and a rescan; perform remediation only for an already-known disposable lab object. Beta alert APIs cover directory roles, not a universal PIM alert surface.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-how-to-configure-security-alerts">Portal alerts and reader roles</a><a href="https://learn.microsoft.com/en-us/graph/how-to-pim-alerts">Beta alert lifecycle, configuration, and remediation</a></p>
+</section>
+
+<section class="module" id="m14" data-title="14 / Audit, correlate and retain evidence">
+<div class="module-head"><div><div class="number">Module 14 / observability</div><h2>Audit, correlate and retain evidence</h2><div class="meta">Actors: Security Reader/PRA and Azure Reader as appropriate | 25 minutes</div></div><label class="done"><input type="checkbox" data-complete="m14"> Complete</label></div>
+<ol class="steps">
+<li>Open <strong>PIM &gt; Microsoft Entra roles &gt; Resource audit</strong> for admin history, and <strong>My audit</strong> for your own activity. Filter to the lab time window and operator. Find eligibility creation, activation request, approval/denial, completed activation, deactivation, and policy updates.</li>
+<li>Open a record and inspect actor, target resources, activity name, result, correlation ID, and additional details. Correlate by the activation request ID where exposed (for example <code>RoleAssignmentRequestId</code>), user, role, scope, and UTC timestamps; a correlation ID alone is not guaranteed to match every cross-service event.</li>
+<li>Open <strong>Entra ID &gt; Monitoring &amp; health &gt; Audit logs</strong> and inspect the same window. For groups, inspect the PIM request and membership/ownership changes. Compare <strong>Sign-in logs &gt; Conditional Access</strong> for the authentication-context test.</li>
+<li>In Azure portal open <strong>rg-pim-lab &gt; Activity log</strong>. Find schedule requests and the tag update by operator. Audit evidence of permission use is different from evidence that activation was approved.</li>
+<li>Export a sanitized evidence set. For longer retention open the Entra <strong>Diagnostic settings</strong> experience and route the required audit/sign-in categories to an approved Log Analytics workspace or storage. Configure Azure Activity log diagnostic export separately. Do not assume PIM's interactive audit view is permanent storage; documented directory PIM history is 30 days.</li>
+<li>If using a SIEM, alert on high-risk role activations, policy/approver changes, unexpected direct group membership, and privileged assignments outside the approved process. Validate a known lab event arrives before considering export complete. Retention and ingestion can incur cost.</li>
+</ol>
+<h3>Automation / Graph audit export and ARM Activity log</h3>
+<pre data-file="14-directory-audit.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @('AuditLog.Read.All')
+$since = [datetime]::UtcNow.AddHours(-8).ToString('yyyy-MM-ddTHH:mm:ssZ')
+$f = [uri]::EscapeDataString("activityDateTime ge $since")
+$events = @(Get-LabGraphItems "$Graph/auditLogs/directoryAudits?`$filter=$f")
+$labEvents = @($events | Where-Object {
+    $_.initiatedBy.user.id -in @($AdminId,$OperatorId,$ApproverId) -or
+    @($_.targetResources | Where-Object { $_.id -in @($OperatorId,$GroupId) }).Count -gt 0
+})
+$labEvents | ConvertTo-Json -Depth 35 |
+    Set-Content (Join-Path $Evidence 'directory-audit.json') -Encoding utf8
+$labEvents | Select-Object activityDateTime, activityDisplayName, result, correlationId
+# The bounded raw set can include unrelated lab-actor activity. Sanitize before sharing.</code></pre>
+<pre data-file="14-azure-activity.ps1"><code>Connect-LabAzure -ExpectedUserId $AdminId
+$start = [datetime]::UtcNow.AddHours(-8).ToString('yyyy-MM-ddTHH:mm:ssZ')
+$end = [datetime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+$f = [uri]::EscapeDataString("eventTimestamp ge '$start' and eventTimestamp le '$end' and resourceGroupName eq '$RgName'")
+$path = "/subscriptions/$SubscriptionId/providers/microsoft.insights/eventtypes/management/values?api-version=2015-04-01&amp;`$filter=$f"
+$events = @(Get-LabArmItems $path)
+$events | ConvertTo-Json -Depth 35 |
+    Set-Content (Join-Path $Evidence 'azure-activity.json') -Encoding utf8
+$events | Select-Object eventTimestamp, caller, operationName, status, correlationId</code></pre>
+<h3>Automation / example queries after diagnostic export</h3>
+<pre data-file="14-pim-audit.kql" data-lang="kql"><code>// Entra diagnostic export must populate AuditLogs first.
+// Replace the object ID and bound the time range to the actual exercise.
+AuditLogs
+| where TimeGenerated &gt; ago(8h)
+| where Category =~ "RoleManagement"
+| mv-expand Target = TargetResources
+| where tostring(Target.id) == "REPLACE_WITH_OPERATOR_OBJECT_ID"
+| project TimeGenerated, ActivityDisplayName, Result, CorrelationId,
+          InitiatedBy, Target, AdditionalDetails
+| order by TimeGenerated asc
+
+// Separate Azure Activity log export populates AzureActivity.
+AzureActivity
+| where TimeGenerated &gt; ago(8h)
+| where ResourceGroup =~ "rg-pim-lab"
+| where OperationNameValue has "Microsoft.Authorization"
+    or OperationNameValue has "Microsoft.Resources/tags"
+| project TimeGenerated, Caller, OperationNameValue, ActivityStatusValue, CorrelationId
+| order by TimeGenerated asc</code></pre>
+<div class="callout check"><strong>Checkpoint:</strong> your evidence reconstructs who requested which role at which scope, who approved it, when access began/ended, and one action performed during elevation. If retention export was configured, prove delivery; do not merely screenshot a saved setting.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-how-to-use-audit-log">PIM audit and retention</a><a href="https://learn.microsoft.com/en-us/graph/api/directoryaudit-list?view=graph-rest-1.0">Graph audit API</a><a href="https://learn.microsoft.com/en-us/rest/api/monitor/activity-logs/list?view=rest-monitor-2015-04-01">Azure Activity log API</a><a href="https://learn.microsoft.com/en-us/entra/identity/monitoring-health/howto-integrate-activity-logs-with-azure-monitor-logs">Diagnostic export</a></p>
+</section>
+
+<section class="module" id="m15" data-title="15 / Advanced boundaries: scoped roles, ABAC and workloads">
+<div class="module-head"><div><div class="number">Module 15 / advanced extension track</div><h2>Scoped roles, ABAC and workload boundaries</h2><div class="meta">Actors: experienced lab administrators | 30-60 minutes optional | Extra assets may incur charges</div></div><label class="done"><input type="checkbox" data-complete="m15"> Complete</label></div>
+<p>These are bounded extension exercises, not permissions to broaden the core lab. Custom role authoring, storage deployment, and entitlement-management design are separate technologies; PIM governs their supported assignment lifecycles.</p>
+<h3>A / Administrative-unit-scoped directory role</h3>
+<ol class="steps">
+<li>As authorized admin create a new ordinary administrative unit <code>AU-PIM-Lab</code> under <strong>Entra ID &gt; Roles &amp; admins &gt; Administrative units</strong> (or search "Administrative units"). Add only disposable target users. Do not use a restricted-management AU for group PIM experiments.</li>
+<li>In <strong>PIM &gt; Microsoft Entra roles &gt; Add assignments</strong>, choose a role that supports AU scope, such as <strong>User Administrator</strong>. Set scope to the lab AU, choose the operator, and use short time-bound eligibility. Do not use Reports Reader as a substitute if it does not support AU scoping.</li>
+<li>Activate at the AU scope, subject to that role's activation policy. Test an allowed update to a disposable AU member and a denied equivalent operation against a non-AU user. Record both. Do not test by altering administrator or recovery accounts.</li>
+<li>Remove the eligibility and any active assignment, then delete only the empty lab AU. Membership in an AU is not the same as group membership and does not by itself grant privilege.</li>
+</ol>
+<pre data-file="15-au-eligibility.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @(
+    'RoleManagement.Read.Directory','RoleEligibilitySchedule.ReadWrite.Directory'
+)
+$AuId = Read-Host 'Object ID of the disposable AU-PIM-Lab administrative unit'
+$f = [uri]::EscapeDataString("displayName eq 'User Administrator'")
+$roles = @(Get-LabGraphItems "$Graph/roleManagement/directory/roleDefinitions?`$filter=$f")
+if ($roles.Count -ne 1) { throw 'Expected one User Administrator role.' }
+$body = @{
+    action='adminAssign'; principalId=$OperatorId; roleDefinitionId=$roles[0].id
+    directoryScopeId="/administrativeUnits/$AuId"
+    justification='PIM-LAB: AU-scoped administration'
+    scheduleInfo=@{
+        startDateTime=[datetime]::UtcNow.ToString('o')
+        expiration=@{type='afterDuration'; duration='PT1H'}
+    }
+}
+Write-LabGraph -Uri "$Graph/roleManagement/directory/roleEligibilityScheduleRequests" -Body $body
+# SelfActivate uses roleAssignmentScheduleRequests with this SAME role and AU scope.
+# Remove with adminRemove at this SAME scope; do not substitute directoryScopeId='/'.</code></pre>
+<h3>B / Azure ABAC on an eligible storage data role</h3>
+<ol class="steps">
+<li>Only in a disposable storage account, create two blob containers <code>pim-lab-allowed</code> and <code>pim-lab-denied</code>, each with a harmless test blob. Record cost, network settings, and storage account resource ID. Do not open public access or disable a firewall to make the test pass.</li>
+<li>At the storage account's <strong>Access control (IAM) &gt; Add role assignment</strong>, choose <strong>Storage Blob Data Reader</strong>, operator, <strong>Eligible</strong>, and an expiry. In <strong>Conditions</strong>, use the visual condition builder to limit relevant blob read operations to the allowed container. PIM eligible Azure assignments support conditions for supported roles/actions; this is not available for every role.</li>
+<li>Activate and test an actual blob download using <strong>Microsoft Entra user account</strong> authentication, not an account key or SAS. The allowed blob should succeed, the denied blob should fail. Portal browsing/listing can need additional management-plane access and does not itself prove a blob-read condition.</li>
+<li>Inspect the stored condition string/version via ARM. Reapply the same condition with a schedule request if testing automation. Remove both eligibility and activation and delete only your disposable storage resources.</li>
+</ol>
+<pre data-file="15-abac-eligibility.ps1"><code>Connect-LabAzure -ExpectedUserId $AdminId
+$StorageScope = Read-Host 'Full resource ID of the disposable lab storage account'
+if (-not $StorageScope.StartsWith("$AzureScope/providers/Microsoft.Storage/storageAccounts/",
+        [StringComparison]::OrdinalIgnoreCase)) { throw 'Storage account must be inside rg-pim-lab.' }
+$RoleId = "/subscriptions/$SubscriptionId/providers/Microsoft.Authorization/roleDefinitions/2a2b9908-6ea1-4ae2-8e65-a410df84e7d1"
+# Read a condition you already built and tested in the portal. Never use a guessed
+# condition for a different action/suboperation or silently drop it on renewal.
+$f = [uri]::EscapeDataString("principalId eq '$OperatorId'")
+$items = @(Get-LabArmItems "$StorageScope/providers/Microsoft.Authorization/roleEligibilityScheduleInstances?api-version=2020-10-01&amp;`$filter=$f")
+$items | ConvertTo-Json -Depth 20 | Write-Host
+$InstanceName = Read-Host 'Exact storage data-role eligibility instance name'
+$item = @($items | Where-Object name -eq $InstanceName)
+if ($item.Count -ne 1 -or $item[0].properties.roleDefinitionId -ne $RoleId -or
+    -not $item[0].properties.condition) { throw 'Expected one tested conditional data-role instance.' }
+$body = @{properties=@{
+    requestType='AdminUpdate'; principalId=$OperatorId; roleDefinitionId=$RoleId
+    targetRoleEligibilityScheduleId=$item[0].properties.roleEligibilityScheduleId
+    condition=$item[0].properties.condition; conditionVersion='2.0'
+    justification='PIM-LAB: preserve tested ABAC condition'
+    scheduleInfo=@{
+        startDateTime=[datetime]::UtcNow.ToString('o')
+        expiration=@{type='AfterDuration'; duration='PT1H'}
+    }
+}}
+$name = [guid]::NewGuid().ToString()
+Write-LabArm -Path "$StorageScope/providers/Microsoft.Authorization/roleEligibilityScheduleRequests/$name`?api-version=2020-10-01" -Body $body</code></pre>
+<h3>C / Custom roles and non-human identities: inspect, do not assume</h3>
+<div class="table-wrap"><table><thead><tr><th>Scenario</th><th>How to reason about it</th></tr></thead><tbody>
+<tr><td>Custom Entra or Azure role</td><td>Create only a minimal disposable role through the appropriate custom-role experience. Assign it using the same schedule APIs with its discovered definition ID; verify supported scope and role permissions. PIM does not invent permissions absent from the role definition.</td></tr>
+<tr><td>Service principal / managed identity</td><td>Do not assume it can complete a human self-activation/MFA/approval flow. Eligibility and principal-type support vary by plane. Application-permission automation can administer schedules when authorized, but is not the same as an eligible human activating as themselves. Validate documented principal support rather than granting an app broad directory write permissions.</td></tr>
+<tr><td>Emergency access</td><td>Keep independent, tested recovery access. Monitor exceptions explicitly. Never remove the last administrator or make all approvers depend on the very activation they must approve.</td></tr>
+<tr><td>Entitlement management / access packages</td><td>Can integrate with group-based access, but request/access-package approval and PIM activation approval are different controls. Test which exact entitlement is granted and which activation boundary remains.</td></tr>
+<tr><td>Microsoft 365 / Intune / SaaS</td><td>PIM can govern a supported Entra role or group that confers access. It does not guarantee every workload's authorization cache instantly honors expiry; test the target application.</td></tr>
+</tbody></table></div>
+<h3>D / Custom activation extensions <span class="small">(preview; Governance/Suite required)</span></h3>
+<p>P2 alone does not include this preview. It adds real external validation beyond PIM's informational ticket field. Endpoint hosting and app authentication are prerequisites, not deployed by this document. Use only a lab-owned HTTPS API with signature, issuer, audience, lifetime, and authorized PIM-caller validation through a trusted authentication library or platform. Never log bearer tokens or accept unsigned JSON as authenticated identity.</p>
+<ol class="steps">
+<li>Prepare an authenticated test API and single-tenant app registration. Under <strong>App registrations &gt; your API &gt; Expose an API</strong>, configure the documented Application ID URI matching the endpoint host and ending with the app's client ID. Verify an unauthenticated POST is rejected before connecting PIM.</li>
+<li>As PRA open <strong>PIM &gt; Custom Extensions &gt; Create a custom extension</strong>. Name it <code>PIM-Lab-TicketCheck</code>, choose <strong>Groups</strong> and <strong>Pre-approval</strong>, enter the HTTPS URL, timeout/retries, API authentication registration, and attribute <code>projectCode</code>. Create.</li>
+<li>As active group owner open <strong>PIM &gt; Groups &gt; lab group &gt; Settings &gt; Member &gt; Edit</strong>. Link the pre-approval extension. Begin in <strong>Audit mode</strong>; confirm requests reach the endpoint without treating audit mode as enforcement.</li>
+<li>Configure the test API to reject an invalid project/ticket and allow the known lab case. Turn off Audit mode only for the test group. Demonstrate denial, then normal approval. Correlate <code>evaluationId</code> with PIM audit. Unlink before deleting the extension and its hosting assets.</li>
+</ol>
+<p><strong>Outcome semantics:</strong> pre-approval <code>Approved</code> continues the normal manual-approval path; <code>Denied</code> blocks; <code>AutoApproved</code> skips manual approval and is deliberately not used here. A post-approval extension runs after human approval and may return <code>approved</code>, <code>denied</code>, or <code>deferred</code>. A deferred request remains pending external evaluation until the registered extension app sends a final <code>/updateRequest</code> callback. That callback cannot defer again; use provider-specific payloads and authentication, not an operator's interactive token.</p>
+<h4>Automation / register an existing secured API with PIM</h4>
+<pre data-file="15-custom-extension-create-beta.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @('PrivilegedAccess-CustomExt.ReadWrite.All')
+$Endpoint = [uri](Read-Host 'Your own authenticated test API HTTPS URL')
+$ApiResourceId = Read-Host 'App registration Application ID URI'
+if ($Endpoint.Scheme -ne 'https' -or
+    -not $ApiResourceId.StartsWith("api://$($Endpoint.Host)/")) {
+    throw 'Use an HTTPS endpoint and the matching registered Application ID URI.'
+}
+$body = @{
+    '@odata.type'='#microsoft.graph.roleManagementCustomCalloutExtension'
+    displayName='PIM-Lab-TicketCheck'; description='Disposable external validation lab'
+    resourceType='entraGroups'; type='preApproval'; isEnabled=$true
+    customAttributes=@('projectCode')
+    endpointConfiguration=@{
+        '@odata.type'='#microsoft.graph.httpRequestEndpoint'; targetUrl=$Endpoint.AbsoluteUri
+    }
+    clientConfiguration=@{
+        '@odata.type'='#microsoft.graph.customExtensionClientConfiguration'
+        timeoutInMilliseconds=10000; maximumRetries=1
+    }
+    authenticationConfiguration=@{
+        '@odata.type'='#microsoft.graph.azureAdTokenAuthentication'; resourceId=$ApiResourceId
+    }
+}
+$extension = Write-LabGraph -Uri "$GraphBeta/identityGovernance/privilegedAccess/customExtensions" -Body $body
+if ($extension) {
+    $extension | ConvertTo-Json -Depth 20 |
+        Set-Content (Join-Path $Evidence 'lab-custom-extension.json') -Encoding utf8
+    Write-Host "Record custom extension ID: $($extension.id)"
+}</code></pre>
+<h4>Automation / discover the exact stage rule and bind it</h4>
+<p>The script does not guess stage rule IDs. Inspect returned names/targets and choose the <em>pre-approval</em> Member activation rule. Portal Audit mode is configured separately; use the portal-first test before enabling an enforcing rule.</p>
+<pre data-file="15-custom-extension-bind.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @('RoleManagementPolicy.ReadWrite.AzureADGroup')
+$GroupId = Read-Host 'Verified lab group object ID'
+$ExtensionId = Read-Host 'Lab pre-approval Groups extension ID'
+$f = [uri]::EscapeDataString("scopeId eq '$GroupId' and scopeType eq 'Group'")
+$pas = @(Get-LabGraphItems "$Graph/policies/roleManagementPolicyAssignments?`$filter=$f")
+$pa = @($pas | Where-Object roleDefinitionId -eq 'member')
+if ($pa.Count -ne 1) { throw 'Expected one Member policy.' }
+$base = "$Graph/policies/roleManagementPolicies/$($pa[0].policyId)/rules"
+$rules = @(Get-LabGraphItems $base | Where-Object {
+    $_.'@odata.type' -eq '#microsoft.graph.unifiedRoleManagementPolicyCustomExtensionRule'
+})
+$rules | Select-Object id, displayName, isEnabled, customExtensionId, target
+$RuleId = Read-Host 'Exact PRE-APPROVAL activation rule ID after checking stage and target'
+$rule = @($rules | Where-Object id -eq $RuleId)
+if ($rule.Count -ne 1) { throw 'No unique custom-extension rule selected.' }
+Save-LabBaseline 'group-custom-extension-rule-baseline.json' @{
+    tenantId=$TenantId; policyId=$pa[0].policyId; rule=$rule[0]
+}
+Write-LabGraph -Method PATCH -Uri "$base/$RuleId" -Body @{
+    '@odata.type'='#microsoft.graph.unifiedRoleManagementPolicyCustomExtensionRule'
+    target=$rule[0].target; customExtensionId=$ExtensionId; isEnabled=$true
+}
+# Add the custom input to the module 10 activation body:
+# $body.customData = (@{projectCode='PIM-LAB'} | ConvertTo-Json -Compress)
+# Use the existing group assignmentScheduleRequests endpoint and policy controls.
+# Before cleanup, restore this rule's original writable fields, then DELETE only
+# the saved lab extension at /beta/identityGovernance/privilegedAccess/customExtensions/{id}.</code></pre>
+<details><summary>Post-approval deferred callback: API contract, not an interactive-user shortcut</summary>
+<p>The extension service, authenticated as its registered application, resolves the exact pending request. Directory callback: Graph v1.0 <code>/roleManagement/directory/roleAssignmentScheduleRequests/{requestId}/updateRequest</code>. Groups callback: Graph beta <code>/identityGovernance/privilegedAccess/group/assignmentScheduleRequests/{requestId}/updateRequest</code>. Azure callback: ARM <code>{scope}/providers/Microsoft.Authorization/roleAssignmentScheduleRequests/{requestId}/updateRequest?api-version=2020-10-01</code>. Graph accepts a string reason; ARM accepts a string collection. Keep the original evaluation ID, use a final approved/denied outcome, inspect the returned status, and verify provisioning. Repeated callbacks, retries, and endpoint failures need explicit idempotency/error handling in the hosted service.</p>
+</details>
+<div class="callout check"><strong>Checkpoint:</strong> if you run an advanced track, capture both a permitted and denied operation at the exact scope. If skipped, record it as optional rather than claiming it was tested.</div>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/admin-units-assign-roles">AU-scoped role assignment</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-assign-roles">PIM and ABAC</a><a href="https://learn.microsoft.com/en-us/rest/api/authorization/role-eligibility-schedule-requests/create?view=rest-authorization-2020-10-01">Condition properties</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-configure">Supported PIM boundaries</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/privileged-identity-management-custom-extensions">Custom extensions preview</a><a href="https://learn.microsoft.com/en-us/graph/api/privilegedaccessroot-post-customextensions?view=graph-rest-beta">Create extension API</a><a href="https://learn.microsoft.com/en-us/graph/api/resources/unifiedrolemanagementpolicycustomextensionrule?view=graph-rest-1.0">Bind extension rule</a><a href="https://learn.microsoft.com/en-us/graph/api/unifiedroleassignmentschedulerequest-updaterequest?view=graph-rest-1.0">Directory evaluation callback</a></p>
+</section>
+
+<section class="module" id="m16" data-title="16 / Teardown and verify no residual privilege">
+<div class="module-head"><div><div class="number">Module 16 / cleanup</div><h2>Teardown and verify no residual privilege</h2><div class="meta">Actors: original lab administrators | 25 minutes | Destructive, exact lab objects only</div></div><label class="done"><input type="checkbox" data-complete="m16"> Complete</label></div>
+<div class="callout warning"><strong>Remove only what you created.</strong> Use saved IDs and baseline files. Do not bulk-remove all privileged assignments, all group members, or all policies. Allow at least five minutes after assignment creation before removing it. Export required evidence first.</div>
+<ol class="steps">
+<li>As each requester, cancel outstanding lab activation requests and deactivate directory, Azure, group Member, and group Owner activations. Confirm no request remains <strong>PendingApproval</strong> and no lab activated schedule is still active.</li>
+<li>As PRA, remove only the lab operator's Reports Reader eligibility, optional comparison assignments, AU-scoped assignments, and the lab group's directory-role binding. Inspect eligible and active-assigned tabs separately. Do not remove the admin's PRA or the recovery administrator.</li>
+<li>Remove the lab Azure eligible/active-assigned schedules at their exact resource scope, including any optional storage role. Check inherited and group-based paths. A deleted request history entry does not remove a schedule.</li>
+<li>Stop/delete lab-only review definitions/series so no future review runs. Preserve audit evidence. Restore any changed alert thresholds.</li>
+<li>Restore Reports Reader role rules and any other changed role policies from their original baselines, including notification recipients and authentication context. In the CA lab, restore the PIM rule first, then disable/delete only <code>PIM-Lab-Context</code> and delete the unused lab context. Unlink any custom extension and resolve/cancel deferred lab requests before deleting the exact extension, app registration, and hosted test API. Keep all pre-existing CA policies and authentication methods intact.</li>
+<li>Remove eligible/active group schedules and the group-role binding. Delete the new lab group only after checking it is unused. It cannot be "unmanaged" from PIM. Remove optional custom roles/AU after their assignments are gone.</li>
+<li>Inspect <code>rg-pim-lab</code> for unexpected or shared resources. Delete only the empty lab resource group or the explicitly enumerated disposable resources you created. Do not delete a group that contains another person's resources.</li>
+<li>If you created users solely for this lab, delete only those test accounts after removing their assignments. Reclaim their licenses as appropriate. Review and remove only the delegated consent grants introduced specifically for the lab; never revoke a shared organization's consent blindly. Disconnect sessions and secure/archive evidence.</li>
+</ol>
+<h3>Automation / restore the saved directory policy rules</h3>
+<pre data-file="16-restore-directory-policy.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @('RoleManagementPolicy.ReadWrite.Directory')
+$DirectoryRoleId = Read-Host 'Reports Reader roleDefinitionId'
+$backup = Get-Content (Join-Path $Evidence "directory-$DirectoryRoleId-baseline.json") -Raw |
+    ConvertFrom-Json -AsHashtable
+if ($backup.tenantId -ne $TenantId) { throw 'Baseline belongs to a different tenant.' }
+$base = "$Graph/policies/roleManagementPolicies/$($backup.policyId)/rules"
+foreach ($rule in $backup.rules) {
+    $body = @{}
+    $writable = @('@odata.type','target','isExpirationRequired','maximumDuration',
+        'enabledRules','setting','claimValue','isEnabled','notificationType',
+        'recipientType','notificationLevel','isDefaultRecipientsEnabled',
+        'notificationRecipients','customExtensionId')
+    foreach ($key in $writable) {
+        if ($rule.ContainsKey($key)) {
+            $body[$key] = $rule[$key]
+        }
+    }
+    Write-LabGraph -Method PATCH -Uri "$base/$($rule.id)" -Body $body
+}
+# Read rules again and compare the writable fields to the baseline.
+# If an API rejects read-only metadata, restore that rule using the portal
+# against the saved values; do not discard an unexplained error.</code></pre>
+<h3>Automation / remove the specific directory eligibility</h3>
+<pre data-file="16-remove-directory-eligibility.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @('RoleEligibilitySchedule.ReadWrite.Directory')
+$DirectoryRoleId = Read-Host 'Reports Reader roleDefinitionId'
+Write-LabGraph -Uri "$Graph/roleManagement/directory/roleEligibilityScheduleRequests" -Body @{
+    action='adminRemove'; principalId=$OperatorId; roleDefinitionId=$DirectoryRoleId
+    directoryScopeId='/'; justification='PIM-LAB: teardown exact operator eligibility'
+}
+# For active assigned roles use roleAssignmentScheduleRequests/adminRemove.
+# For the group role bundle use its verified group ID as principalId.
+# For AU scope use the original /administrativeUnits/{id}, not '/'.</code></pre>
+<h3>Automation / remove an exact Azure eligibility and restore policy</h3>
+<pre data-file="16-remove-azure-eligibility.ps1"><code>Connect-LabAzure -ExpectedUserId $AdminId
+$AzureRoleGuid = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
+$f = [uri]::EscapeDataString("principalId eq '$OperatorId'")
+$items = @(Get-LabArmItems "$AzureScope/providers/Microsoft.Authorization/roleEligibilityScheduleInstances?api-version=2020-10-01&amp;`$filter=$f" |
+    Where-Object {
+        $_.properties.scope -eq $AzureScope -and
+        $_.properties.roleDefinitionId.Split('/')[-1] -eq $AzureRoleGuid
+    })
+if ($items.Count -ne 1) { throw 'Expected one exact lab RG eligibility; inspect before removal.' }
+$body = @{properties=@{
+    requestType='AdminRemove'; principalId=$OperatorId
+    roleDefinitionId=$items[0].properties.roleDefinitionId
+    targetRoleEligibilityScheduleId=$items[0].properties.roleEligibilityScheduleId
+    justification='PIM-LAB: teardown'
+}}
+$name = [guid]::NewGuid().ToString()
+Write-LabArm -Path "$AzureScope/providers/Microsoft.Authorization/roleEligibilityScheduleRequests/$name`?api-version=2020-10-01" -Body $body
+
+$backup = Get-Content (Join-Path $Evidence 'azure-contributor-baseline.json') -Raw |
+    ConvertFrom-Json -AsHashtable
+if ($backup.scope -ne $AzureScope -or $backup.tenantId -ne $TenantId) {
+    throw 'Azure baseline scope/tenant mismatch.'
+}
+Write-LabArm -Method PATCH -Path "$($backup.policyPath)?api-version=2020-10-01" `
+    -Body @{properties=@{rules=$backup.rules}}</code></pre>
+<h3>Automation / remove group eligibilities and delete only the verified lab group</h3>
+<pre data-file="16-remove-lab-group.ps1"><code>Connect-LabGraph -ExpectedUserId $AdminId -Scopes @(
+    'PrivilegedEligibilitySchedule.ReadWrite.AzureADGroup',
+    'PrivilegedAssignmentSchedule.ReadWrite.AzureADGroup',
+    'Group.ReadWrite.All','RoleManagement.ReadWrite.Directory'
+)
+$GroupId = Read-Host 'Exact lab group ID saved at creation'
+$group = Invoke-MgGraphRequest -Method GET -Uri "$Graph/groups/$GroupId"
+if ($group.displayName -ne 'PIM-Lab-Readers' -or
+    $group.description -ne 'Disposable PIM training group') {
+    throw 'Group identity check failed. Verify manually, do not weaken the guard.'
+}
+$f = [uri]::EscapeDataString("groupId eq '$GroupId'")
+$base = "$Graph/identityGovernance/privilegedAccess/group"
+foreach ($kind in @('assignmentScheduleInstances','eligibilityScheduleInstances')) {
+    $instances = @(Get-LabGraphItems "$base/$kind`?`$filter=$f")
+    $instances | ConvertTo-Json -Depth 20 | Write-Host
+}
+# Remove only operator relationships after separately deactivating active access.
+# Set $access to member or owner only if that specific eligibility exists:
+$access = Read-Host 'Exact eligible operator relationship to remove: member or owner'
+if ($access -notin @('member','owner')) { throw 'Invalid relationship.' }
+Write-LabGraph -Uri "$base/eligibilityScheduleRequests" -Body @{
+    action='adminRemove'; accessId=$access; principalId=$OperatorId; groupId=$GroupId
+    justification='PIM-LAB: teardown eligible relationship'
+}
+# Verify all group-role bindings and schedules are gone before deletion.
+if ((Read-Host 'Confirm all lab bindings removed; type DELETE GROUP') -ceq 'DELETE GROUP') {
+    Write-LabGraph -Method DELETE -Uri "$Graph/groups/$GroupId"
+}</code></pre>
+<h3>Automation / empty resource-group deletion only</h3>
+<pre data-file="16-delete-empty-rg.ps1"><code>Connect-LabAzure -ExpectedUserId $AdminId
+$rg = Read-LabArm "$AzureScope`?api-version=2021-04-01"
+if ($rg.name -ne 'rg-pim-lab' -or $rg.tags.Purpose -ne 'PIMLab') {
+    throw 'Resource group is not the expected tagged lab group.'
+}
+$resources = @(Get-LabArmItems "$AzureScope/resources?api-version=2021-04-01")
+if ($resources.Count -ne 0) {
+    $resources | Select-Object id, type, name
+    throw 'Resource group is not empty. Review and delete exact disposable assets manually.'
+}
+if ((Read-Host 'Type the full resource-group ID to confirm deletion') -cne $AzureScope) {
+    throw 'Deletion not confirmed.'
+}
+Write-LabArm -Method DELETE -Path "$AzureScope`?api-version=2021-04-01"
+# ARM deletion is asynchronous. Poll GET until 404 and confirm in the portal.
+# Disconnect only after the verification below is complete.</code></pre>
+<div class="callout check"><strong>Final verification:</strong> in the portal and APIs, re-check operator eligibility, active schedules, group membership/ownership, pending requests, role bindings, review series, CA policies/contexts, and restored directory-role settings. Confirm deleted objects are absent (404), not merely "deletion accepted." Allow provisioning delay; refresh sessions and check effective access. Do not mark cleanup complete while an operation is pending.</div>
+<p class="small">After verification: <code>Disconnect-MgGraph</code> and <code>Disconnect-AzAccount -Scope Process</code>. The lab intentionally does not auto-delete local evidence or browser notes; these can contain tenant/user identifiers. Retain or remove them according to your policy.</p>
+<p class="sources">References: <a href="https://learn.microsoft.com/en-us/graph/api/rbacapplication-post-roleeligibilityschedulerequests?view=graph-rest-1.0">Directory revocation</a><a href="https://learn.microsoft.com/en-us/rest/api/authorization/role-eligibility-schedule-requests/create?view=rest-authorization-2020-10-01">Azure removal request</a><a href="https://learn.microsoft.com/en-us/graph/api/resources/privilegedidentitymanagement-for-groups-api-overview?view=graph-rest-1.0">Group enrollment lifecycle</a></p>
+</section>
+
+<section class="module" id="m17" data-title="17 / Troubleshooting and capstone checklist">
+<div class="module-head"><div><div class="number">Module 17 / prove your understanding</div><h2>Troubleshooting and capstone</h2><div class="meta">All actors | 15 minutes | Use evidence, not just green checkboxes</div></div><label class="done"><input type="checkbox" data-complete="m17"> Complete</label></div>
+<div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Check in this order</th></tr></thead><tbody>
+<tr><td>PIM missing / license error</td><td>Correct tenant; valid P2/Governance entitlement; license assignment to applicable users; trial expiry; required role and policy restrictions. Consult current licensing rather than inferring entitlement from an Azure subscription.</td></tr>
+<tr><td>403 from Graph</td><td>Signed-in account ID and tenant; delegated scopes actually consented in <code>Get-MgContext</code>; user's active role or eligible self-action; resource scope; endpoint version. Consent does not replace a user role.</td></tr>
+<tr><td>403 from ARM</td><td>Azure context and account; role at exact resource scope; deny assignments; ABAC conditions; propagation. Entra PRA/Global Reader does not automatically grant Azure resource administration.</td></tr>
+<tr><td>MFA required / claims challenge</td><td>Use the supported interactive portal or reconnect with an authentication flow able to satisfy the challenge. Check CA sign-in details and allowed methods. Do not disable MFA or swap to an app-only token to bypass a human activation control.</td></tr>
+<tr><td>No fresh MFA prompt</td><td>An earlier qualifying claim may satisfy the requirement. Inspect sign-in/authentication context results; lack of a new prompt alone does not prove a control is disabled.</td></tr>
+<tr><td>Duration / policy validation error</td><td>Activation cap versus eligible/active assignment maximum; UTC timestamps; expired schedule; minimum five-minute constraints; exact scope's policy. Do not silently drop approval, condition, or ticket data.</td></tr>
+<tr><td>Pending approval</td><td>Named approver is a different available user; correct plane's approval blade; request/approval/step IDs; first decision wins. For the documented activation approval workflow, an unanswered request expires after 24 hours; do not assume a configurable multi-stage escalation path.</td></tr>
+<tr><td>Activated but still denied</td><td>Request provisioning status; active schedule/instance; target role actually includes the action; correct tenant/scope; application token/cache refresh; group propagation; other deny/CA/network controls. Read-only access tests may be masked by ordinary user permissions.</td></tr>
+<tr><td>Access persists after deactivation</td><td>Standing direct/inherited/group access; another activation; group ownership/member bypass; app/token caching. PIM assignment removal is not a universal immediate session revocation mechanism.</td></tr>
+<tr><td>Group policy ID not found</td><td>After onboarding, rediscover policy assignments using scopeType <code>Group</code> and exact group ID. Member and Owner each have a separate policy.</td></tr>
+<tr><td>429 / timeout / partial policy update</td><td>Honor <code>Retry-After</code>; inspect existing request and current policy before retrying. Do not resubmit a create operation blindly. Multi-rule updates may partially succeed; compare every rule with the desired state and saved baseline.</td></tr>
+<tr><td>No notification</td><td>Correct event/recipient rule, recipient mailbox, mail routing/quarantine, policy save, and actual event state. Portal approval can work even if email delivery fails.</td></tr>
+<tr><td>Review finished but access remains</td><td>Scope and assignment type; Completed versus Applied; auto-apply setting; exact denied item; nested or alternate access paths. Do not confuse review completion with effective revocation.</td></tr>
+</tbody></table></div>
+<h3>Capstone / evidence matrix</h3>
+<p>Use this as the definition of done. Record exact IDs in your secured evidence folder, not passwords/tokens. Progress checkboxes only track reading; they do not query or attest your tenant.</p>
+<div class="table-wrap"><table><thead><tr><th>Capability</th><th>Required demonstration</th><th>Modules</th></tr></thead><tbody>
+<tr><td>Least privilege / scope</td><td>Correct actor and tenant; no inherited access masking tests; separate directory/ARM roles</td><td>00-02, 07</td></tr>
+<tr><td>Policy configuration</td><td>Before/after rules; MFA/context, duration, approval, justification, ticketing, expiry, notifications</td><td>03, 07, 09, 11</td></tr>
+<tr><td>Assignment types</td><td>Eligible versus active assigned versus activated; permanent toggles inspected without weakening policy</td><td>04, 06</td></tr>
+<tr><td>Entra workflow</td><td>Approve, deny, cancel, cap rejection, explicit deactivation, natural expiry, successful protected action</td><td>05-06</td></tr>
+<tr><td>Azure workflow</td><td>RG eligibility, approval, allowed tag write, deactivation, denied write</td><td>08</td></tr>
+<tr><td>Group workflow</td><td>Member/Owner independence; before/after active relationships; optional role-bundle boundary</td><td>09-10</td></tr>
+<tr><td>Lifecycle</td><td>Extend, renew, update, revoke; request status distinguished from effective state</td><td>06, 16</td></tr>
+<tr><td>Governance</td><td>Review scope, decision, Applied state and assignment outcome; alert investigation/rescan</td><td>12-13</td></tr>
+<tr><td>Monitoring</td><td>Linked request, approver, activation, operation, expiry/deactivation evidence in UTC</td><td>14</td></tr>
+<tr><td>Advanced scope / extensions</td><td>AU/ABAC allowed and denied tests; optional custom-extension audit/enforcement outcomes, or explicitly marked not run</td><td>15</td></tr>
+<tr><td>Cleanup</td><td>No residual lab privilege, no recurring reviews, original shared policies restored, assets verified absent</td><td>16</td></tr>
+</tbody></table></div>
+<h3>Explain it without the portal</h3>
+<ol class="steps">
+<li>Why is a permanent eligible assignment different from permanent active access? Which clock limits eligibility, and which limits an activation?</li>
+<li>Why can a PRA configure a directory role but still get 403 on Azure role eligibility? What additional authority and API are needed?</li>
+<li>Why does an active role assignment to a group make its membership policy a security boundary? What happens if an owner adds a member directly?</li>
+<li>Why do ticket information, an MFA checkbox, an authentication context, an approver email, and an Applied review status prove different things?</li>
+<li>Which identifiers do you need to correlate request, schedule, instance, approval step, audit record, and actual resource action?</li>
+</ol>
+<div class="callout"><strong>Validation boundary:</strong> this HTML is documentation and an offline learning aid. Its automation examples must be authorized and tested in your own tenant. It does not connect to your account, verify licenses, deploy resources, or guarantee portal labels/API previews remain unchanged.</div>
+<p class="sources">Troubleshooting references: <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-how-to-activate-role">Directory activation</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-activate-your-roles">Azure activation</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-approval-workflow">Approval limits</a><a href="https://learn.microsoft.com/en-us/entra/id-governance/licensing-fundamentals">Licensing requirements</a></p>
+</section>
+<p class="small">Independent learning material, not a Microsoft product. Documentation reference check: 4 November 2026. Preserve current Microsoft licensing, role, cloud, and preview requirements when adapting. No external fonts, images, libraries, or telemetry are required to read this file.</p>
+</main>
+</div>
+<div id="status" class="status" role="status" aria-live="polite"></div>
+<script>
+(() => {
+  'use strict';
+  const key = 'entra-pim-field-lab-v1';
+  const modules = Array.from(document.querySelectorAll('.module'));
+  const nav = document.getElementById('nav');
+  const status = document.getElementById('status');
+  let state = { completed: {}, notes: {}, theme: '' };
+  let statusTimer;
+  const announce = message => {
+    status.textContent = message;
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => { status.textContent = ''; }, 4500);
+  };
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) || 'null');
+    if (saved && typeof saved === 'object') {
+      state.completed = saved.completed && typeof saved.completed === 'object' ? saved.completed : {};
+      state.notes = saved.notes && typeof saved.notes === 'object' ? saved.notes : {};
+      state.theme = saved.theme === 'dark' || saved.theme === 'light' ? saved.theme : '';
+    }
+  } catch { /* Local-file storage may be disabled; the lab still works. */ }
+  const save = () => {
+    try { localStorage.setItem(key, JSON.stringify(state)); }
+    catch { announce('Browser storage unavailable. Export progress to keep your notes.'); }
+  };
+  const download = (name, text, type = 'text/plain;charset=utf-8') => {
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    const link = document.createElement('a');
+    link.href = url; link.download = name;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const updateProgress = () => {
+    const count = modules.filter(module => state.completed[module.id] === true).length;
+    document.getElementById('progress').max = modules.length;
+    document.getElementById('progress').value = count;
+    document.getElementById('progress-label').textContent = `${count} of ${modules.length} modules complete`;
+    modules.forEach(module => {
+      const link = nav.querySelector(`[href="#${module.id}"]`);
+      link.classList.toggle('complete', state.completed[module.id] === true);
+    });
+  };
+  modules.forEach(module => {
+    const link = document.createElement('a');
+    link.href = `#${module.id}`;
+    link.textContent = module.dataset.title;
+    nav.appendChild(link);
+    const checkbox = module.querySelector('[data-complete]');
+    checkbox.checked = state.completed[module.id] === true;
+    checkbox.addEventListener('change', () => {
+      state.completed[module.id] = checkbox.checked;
+      save(); updateProgress();
+    });
+    const label = document.createElement('label');
+    label.className = 'notes-label small';
+    label.htmlFor = `notes-${module.id}`;
+    label.textContent = 'Local notes / evidence references (no passwords or tokens)';
+    const notes = document.createElement('textarea');
+    notes.className = 'notes'; notes.id = label.htmlFor;
+    notes.value = typeof state.notes[module.id] === 'string' ? state.notes[module.id] : '';
+    notes.placeholder = 'What did you verify? Record evidence filenames and unresolved issues.';
+    notes.addEventListener('input', () => { state.notes[module.id] = notes.value; save(); });
+    module.append(label, notes);
+  });
+  document.querySelectorAll('pre[data-file]').forEach(pre => {
+    const code = pre.querySelector('code');
+    const text = code.textContent.replace(/\r\n/g, '\n').trim() + '\n';
+    code.textContent = text;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'code-wrap';
+    const bar = document.createElement('div');
+    bar.className = 'code-bar';
+    const title = document.createElement('span');
+    title.textContent = `${pre.dataset.lang === 'kql' ? 'KQL' : 'PowerShell'} / ${pre.dataset.file}`;
+    const buttons = document.createElement('div');
+    const copy = document.createElement('button');
+    copy.type = 'button'; copy.textContent = 'Copy';
+    copy.setAttribute('aria-label', `Copy ${pre.dataset.file}`);
+    copy.addEventListener('click', async () => {
+      try {
+        if (!navigator.clipboard || !window.isSecureContext) throw new Error('Clipboard unavailable');
+        await navigator.clipboard.writeText(text);
+        announce(`Copied ${pre.dataset.file}`);
+      } catch {
+        const range = document.createRange();
+        range.selectNodeContents(code);
+        const selection = window.getSelection();
+        selection.removeAllRanges(); selection.addRange(range);
+        announce('Code selected. Press Ctrl+C (or Command+C) to copy.');
+      }
+    });
+    const dl = document.createElement('button');
+    dl.type = 'button'; dl.textContent = 'Download';
+    dl.setAttribute('aria-label', `Download ${pre.dataset.file}`);
+    dl.addEventListener('click', () => download(pre.dataset.file, text));
+    buttons.append(copy, dl); bar.append(title, buttons);
+    pre.before(wrapper); wrapper.append(bar, pre);
+  });
+  const search = document.getElementById('search');
+  const empty = document.createElement('p');
+  empty.className = 'no-results'; empty.hidden = true;
+  empty.textContent = 'No matching modules. Clear the search to show the full lab.';
+  document.getElementById('main').appendChild(empty);
+  search.addEventListener('input', () => {
+    const q = search.value.toLowerCase().trim();
+    let count = 0;
+    modules.forEach(module => {
+      const match = !q || module.textContent.toLowerCase().includes(q);
+      module.hidden = !match;
+      nav.querySelector(`[href="#${module.id}"]`).hidden = !match;
+      if (match) count++;
+    });
+    empty.hidden = count !== 0;
+  });
+  const preferredDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.dataset.theme = state.theme || (preferredDark ? 'dark' : 'light');
+  document.getElementById('theme').addEventListener('click', () => {
+    state.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = state.theme; save();
+  });
+  document.getElementById('expand').addEventListener('click', event => {
+    const details = Array.from(document.querySelectorAll('details'));
+    const open = details.some(detail => !detail.open);
+    details.forEach(detail => { detail.open = open; });
+    event.target.textContent = open ? 'Collapse details' : 'Expand details';
+  });
+  let printedDetails = [];
+  window.addEventListener('beforeprint', () => {
+    printedDetails = Array.from(document.querySelectorAll('details')).filter(detail => !detail.open);
+    printedDetails.forEach(detail => { detail.open = true; });
+  });
+  window.addEventListener('afterprint', () => {
+    printedDetails.forEach(detail => { detail.open = false; });
+    printedDetails = [];
+  });
+  document.getElementById('print').addEventListener('click', () => window.print());
+  document.getElementById('export').addEventListener('click', () => {
+    download('pim-lab-progress.json', JSON.stringify({
+      lab: 'Microsoft Entra PIM field lab', exportedAt: new Date().toISOString(), ...state
+    }, null, 2), 'application/json');
+    announce('Progress and notes exported. This is not a tenant configuration backup.');
+  });
+  document.getElementById('reset').addEventListener('click', () => {
+    if (!window.confirm('Clear saved checkboxes and local notes? Export first if needed. This does not change anything in Azure or Entra.')) return;
+    state.completed = {}; state.notes = {}; save();
+    modules.forEach(module => {
+      module.querySelector('[data-complete]').checked = false;
+      module.querySelector('.notes').value = '';
+    });
+    updateProgress(); announce('Local progress cleared. No tenant resources changed.');
+  });
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        nav.querySelectorAll('a').forEach(link => {
+          const current = link.hash === `#${entry.target.id}`;
+          link.classList.toggle('current', current);
+          if (current) link.setAttribute('aria-current', 'location');
+          else link.removeAttribute('aria-current');
+        });
+      });
+    }, { rootMargin: '-5% 0px -65% 0px', threshold: 0 });
+    modules.forEach(module => observer.observe(module));
+  }
+  updateProgress();
+})();
+</script>
+<script src="../assets/resource-nav.js" defer></script>
+</body>
+</html>

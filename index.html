@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="A personal workspace for identity learning, hands-on labs and useful references.">
+  <title>Personal Lab | A space to keep growing</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/dashboard.css">
+  <script src="assets/dashboard.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="Personal Lab home"><span class="brand-mark" aria-hidden="true">pl.</span><span>Personal Lab<span class="brand-caption">LEARN. BUILD. UNDERSTAND.</span></span></a>
+    <nav class="top-nav" aria-label="Main navigation"><a href="#plans">Plans</a><a href="#labs">Labs</a><a href="#info">Info</a></nav>
+    <span class="header-note"><span class="status-dot"></span> A work in progress, by design</span>
+  </header>
+  <main id="main" class="page">
+    <div class="page-heading"><span class="eyebrow">MY LEARNING WORKSPACE</span><time id="today" hidden></time></div>
+    <section class="hero" aria-labelledby="welcome">
+      <div class="hero-copy"><span class="hero-label"><span class="status-dot"></span> STAY CURIOUS. KEEP BUILDING.</span><h1 id="welcome">A space to<br>keep <em>growing.</em></h1><p>The plan for what comes next. The labs that make it click.<br class="desktop-break"> The knowledge worth keeping close.</p><a class="button button-light" href="plans/development-plan.html">Continue my development plan <span aria-hidden="true">&#8599;</span></a></div>
+      <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div><div class="art-center">Identity<span>&amp; possibility</span></div><span class="orbit-tag tag-plans">01 / PLAN</span><span class="orbit-tag tag-labs">02 / EXPERIMENT</span><span class="orbit-tag tag-info">03 / UNDERSTAND</span></div>
+      <div class="hero-footer"><span>ONE PLACE. THREE WAYS FORWARD.</span><span>Built around Microsoft Entra &amp; identity</span></div>
+    </section>
+    <div class="workspace-bar"><div><h2>Your workspace</h2><p>A little structure for a lot of curiosity.</p></div><label class="search-box"><span aria-hidden="true">&#9906;</span><span class="sr-only">Search resources</span><input id="resource-search" type="search" placeholder="Find a plan, lab or reference..." autocomplete="off"><kbd aria-hidden="true">/</kbd></label></div>
+    <p id="search-status" class="sr-only" role="status" aria-live="polite"></p>
+    <div class="resource-grid">
+      <section id="plans" class="category plans" aria-labelledby="plans-heading">
+        <div class="category-heading"><span class="category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h13v16H4V7m3-4v7h7M9 14h7m-7 3h4"/></svg></span><span class="category-number">01</span></div>
+        <h2 id="plans-heading">Plans <span>Direction, with intention.</span></h2>
+        <a class="resource-card" href="plans/development-plan.html" data-resource data-search="plans development plan secure identity sc-300 study roadmap certification">
+          <div class="card-top"><span class="resource-type">LEARNING ROADMAP</span><span aria-hidden="true">&#8599;</span></div>
+          <h3>Identity development plan</h3><p>A focused SC-300 roadmap, from identity foundations to exam readiness.</p>
+          <div class="card-tags"><span>SC-300</span><span>6 milestones</span></div><div class="card-footer">Open plan <span aria-hidden="true">&#8594;</span></div>
+        </a>
+        <p class="empty-message" hidden>No matching plans.</p>
+        <p class="category-caption">Make room for your next chapter.</p>
+      </section>
+      <section id="labs" class="category labs" aria-labelledby="labs-heading">
+        <div class="category-heading"><span class="category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 3h6m-5 0v7L4 20h16l-6-10V3M7 15h10m-7 2h.01m3 1h.01"/></svg></span><span class="category-number">02</span></div>
+        <h2 id="labs-heading">Labs <span>Less theory. More doing.</span></h2>
+        <a class="resource-card" href="labs/pim-lab.html" data-resource data-search="labs pim privileged identity management entra azure powershell hands-on field lab">
+          <div class="card-top"><span class="resource-type">HANDS-ON FIELD LAB</span><span aria-hidden="true">&#8599;</span></div>
+          <h3>Privileged Identity Management</h3><p>Get hands-on with Entra PIM, just-in-time access and privileged role workflows.</p>
+          <div class="card-tags"><span>Microsoft Entra</span><span>PowerShell</span></div><div class="card-footer">Enter the lab <span aria-hidden="true">&#8594;</span></div>
+        </a>
+        <p class="empty-message" hidden>No matching labs.</p>
+        <p class="category-caption">Understanding starts with an experiment.</p>
+      </section>
+      <section id="info" class="category info" aria-labelledby="info-heading">
+        <div class="category-heading"><span class="category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-3H4zm16 0h-4a3 3 0 0 0-3 3m7-3v14h-3a4 4 0 0 0-4 3"/></svg></span><span class="category-number">03</span></div>
+        <h2 id="info-heading">Info <span>A reference, not a rabbit hole.</span></h2>
+        <a class="resource-card" href="info/entra-roles.html" data-resource data-search="info entra roles built-in role privilege tree permissions reference administrator">
+          <div class="card-top"><span class="resource-type">INTERACTIVE REFERENCE</span><span aria-hidden="true">&#8599;</span></div>
+          <h3>Entra roles, mapped out</h3><p>Explore built-in roles, their privilege levels and where they fit in the bigger picture.</p>
+          <div class="card-tags"><span>Role directory</span><span>Permissions</span></div><div class="card-footer">Explore roles <span aria-hidden="true">&#8594;</span></div>
+        </a>
+        <p class="empty-message" hidden>No matching references.</p>
+        <p class="category-caption">Keep the useful things within reach.</p>
+      </section>
+    </div>
+    <aside class="workspace-note"><span class="note-symbol" aria-hidden="true">+</span><div><strong>Small steps. Real progress.</strong><p>This workspace grows with you. Lab notes and study progress stay in the browser you use; they are not synced to GitHub.</p></div><span class="note-label">PERSONAL, BY DESIGN</span></aside>
+  </main>
+  <footer class="site-footer"><span><strong>personal lab.</strong> A place for what I'm learning.</span><span>Plans <span aria-hidden="true">/</span> Labs <span aria-hidden="true">/</span> Info</span></footer>
+</body>
+</html>

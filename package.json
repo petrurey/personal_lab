@@ -1,0 +1,14 @@
+{
+  "name": "personal-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A personal home for identity plans, hands-on labs and reference material.",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test",
+    "import": "node scripts/import-sources.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

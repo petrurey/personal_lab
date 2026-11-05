@@ -1,0 +1,1310 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Microsoft Entra | Built-in role privilege tree</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1120;
+      --panel: #121c2f;
+      --surface: #17243b;
+      --line: #334562;
+      --text: #eef3fc;
+      --muted: #aebdd4;
+      --accent: #89bfff;
+      --critical: #ffa9b7;
+      --privileged: #ffd18b;
+      --standard: #93c6f7;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 "Segoe UI", system-ui, sans-serif; }
+    button, input, select { font: inherit; }
+    a { color: var(--accent); text-underline-offset: 3px; }
+    button, summary, select { cursor: pointer; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    button:hover { background: #233856; }
+    [hidden] { display: none !important; }
+    .page { max-width: 1540px; margin: auto; padding: 48px 40px 32px; }
+    .eyebrow { color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+    .heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 30px; }
+    h1 { margin: 10px 0 12px; max-width: 850px; font-size: clamp(30px, 4vw, 52px); line-height: 1.12; letter-spacing: -.04em; font-weight: 650; }
+    .intro { max-width: 850px; color: var(--muted); font-size: 16px; }
+    .snapshot { margin-top: 12px; padding: 9px 14px; white-space: nowrap; border: 1px solid var(--line); border-radius: 30px; color: var(--muted); font-size: 12px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 28px 0 22px; }
+    .stat { border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; background: var(--panel); }
+    .stat strong { display: block; font-size: 30px; line-height: 1.2; letter-spacing: -.04em; }
+    .stat span { font-size: 12px; color: var(--muted); }
+    .stat:nth-child(2) strong { color: var(--critical); }
+    .stat:nth-child(3) strong { color: var(--privileged); }
+    .notice { padding: 16px 20px; border-left: 3px solid var(--accent); border-radius: 0 9px 9px 0; background: #152238; color: var(--muted); font-size: 13px; }
+    .notice strong { color: var(--text); }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 26px 0 12px; }
+    .field { display: grid; gap: 5px; }
+    .field:first-child { flex: 1 1 280px; }
+    label { color: var(--muted); font-size: 12px; font-weight: 600; }
+    input, select, button { min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); padding: 9px 12px; }
+    input { width: 100%; }
+    input::placeholder { color: #97a8c0; }
+    .actions { display: flex; gap: 8px; }
+    .status { color: var(--muted); font-size: 12px; min-height: 22px; margin-bottom: 12px; }
+    .root { position: relative; width: fit-content; margin: 24px auto 0; padding: 14px 40px; border: 1px solid #6aa9ee; border-radius: 12px; background: #172d4b; text-align: center; }
+    .root strong { display: block; font-size: 18px; }
+    .root small { color: #bdd9fa; }
+    .root::after { content: ""; position: absolute; width: 1px; height: 28px; background: var(--line); left: 50%; top: 100%; }
+    .tree { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding: 28px 0 0; margin: 0; }
+    .branch { position: relative; min-width: 0; --tone: var(--standard); }
+    .branch::before { content: ""; position: absolute; left: -12px; right: -12px; top: -1px; height: 1px; background: var(--line); }
+    .branch.is-first::before { left: 50%; }
+    .branch.is-last::before { right: 50%; }
+    .branch::after { content: ""; position: absolute; width: 1px; height: 24px; left: 50%; top: 0; background: var(--line); }
+    .branch[data-band="control"] { --tone: var(--critical); }
+    .branch[data-band="privileged"] { --tone: var(--privileged); }
+    .branch-head { margin: 24px 0 18px; border: 1px solid var(--line); border-top: 3px solid var(--tone); border-radius: 12px; padding: 18px; background: var(--panel); min-height: 220px; }
+    .branch-index { font-size: 11px; font-weight: 700; letter-spacing: .12em; color: var(--tone); text-transform: uppercase; }
+    .branch h2 { font-size: 21px; line-height: 1.25; letter-spacing: -.025em; margin: 9px 0; }
+    .branch-head p { color: var(--muted); font-size: 12px; margin: 9px 0 0; }
+    .count { display: inline-block; font-size: 11px; border: 1px solid var(--line); border-radius: 24px; padding: 2px 9px; color: var(--tone); }
+    .families { list-style: none; padding: 0 0 0 15px; margin: 0 0 0 10px; border-left: 1px solid var(--line); }
+    .family { position: relative; margin-bottom: 12px; }
+    .family::before { position: absolute; content: ""; height: 1px; background: var(--line); width: 16px; top: 23px; left: -16px; }
+    .family-box { background: var(--panel); border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+    .family-title { padding: 11px 12px; font-size: 13px; font-weight: 600; }
+    .family-title::marker { color: var(--tone); }
+    .family-total { color: var(--muted); font-size: 11px; font-weight: 400; margin-left: 5px; }
+    .roles { list-style: none; padding: 0 10px 10px; margin: 0; }
+    .role { border-top: 1px solid #293950; }
+    .role-summary { padding: 11px 3px; font-size: 13px; line-height: 1.45; }
+    .role-summary::marker { color: #8194ae; font-size: 10px; }
+    .role-name { font-weight: 550; overflow-wrap: anywhere; }
+    .role-body { padding: 0 4px 14px; font-size: 12px; color: var(--muted); }
+    .role-body p { margin: 8px 0; }
+    .badge { display: inline-block; border: 1px solid var(--line); padding: 2px 7px; border-radius: 5px; color: var(--tone); font-size: 10px; font-weight: 650; }
+    .role-body code { display: block; margin: 4px 0 9px; font-size: 10px; overflow-wrap: anywhere; color: #cad7e9; user-select: all; }
+    .role-body a { display: inline-block; padding: 4px 0; }
+    .empty { margin: 24px 0; padding: 28px; border: 1px dashed var(--line); border-radius: 10px; text-align: center; color: var(--muted); }
+    .method { margin-top: 30px; border-top: 1px solid var(--line); padding-top: 22px; color: var(--muted); font-size: 12px; }
+    .method h2 { margin: 0 0 8px; font-size: 15px; color: var(--text); }
+    .method p { max-width: 1100px; margin: 8px 0; }
+    footer { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 24px; color: var(--muted); font-size: 11px; }
+    noscript p { padding: 20px; background: #412735; }
+    @media (max-width: 1050px) {
+      .page { padding: 30px 20px; }
+      .heading { display: block; }
+      .snapshot { display: inline-block; margin: 0 0 4px; }
+      .tree { gap: 12px; }
+      .branch-head { padding: 14px; min-height: 245px; }
+      .branch::before { left: -6px; right: -6px; }
+    }
+    @media (max-width: 760px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .tree { display: block; padding-left: 16px; border-left: 1px solid var(--line); margin-left: 8px; }
+      .root { margin-left: 0; }
+      .root::after { display: none; }
+      .branch::before, .branch.is-first::before, .branch.is-last::before { left: -17px; width: 17px; right: auto; top: 40px; }
+      .branch::after { display: none; }
+      .branch-head { min-height: 0; }
+      .actions { flex-wrap: wrap; }
+    }
+    @media (prefers-reduced-motion: no-preference) { button { transition: background .15s ease; } }
+    @media print {
+      :root { color-scheme: light; --bg: white; --panel: white; --text: #152038; --muted: #455369; --line: #aaa; --accent: #174e91; --critical: #9c1933; --privileged: #875000; --standard: #174e91; }
+      .page { max-width: none; padding: 0; }
+      .toolbar, .status, .snapshot { display: none; }
+      .root, .notice, .branch-head { background: white; }
+      .root small, .notice strong, .role-body code { color: #152038; }
+      .tree { gap: 12px; }
+      .branch-head { min-height: 0; break-inside: avoid; }
+      .family-box { overflow: visible; }
+      .role { break-inside: avoid; }
+      .role-summary { font-size: 10px; padding: 6px 2px; }
+      .family-title { font-size: 11px; }
+      .role-body { font-size: 10px; }
+      .stats { gap: 8px; margin: 15px 0; }
+      .stat { padding: 8px; }
+      .stat strong { font-size: 22px; }
+      a { text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="eyebrow">Identity &amp; access / Role atlas</div>
+      <div class="heading">
+        <div>
+          <h1>Microsoft Entra<br>built-in role privilege tree</h1>
+          <p class="intro">Explore every role in the Microsoft Entra ID built-in role catalog, organized by privilege designation and functional area. Select a role for its template ID and Microsoft reference.</p>
+        </div>
+        <span class="snapshot">Snapshot / <time datetime="2026-11-03">03 Nov 2026</time></span>
+      </div>
+    </header>
+    <section class="stats" aria-label="Catalog statistics">
+      <div class="stat"><strong id="total-count">--</strong><span>Built-in roles in this snapshot</span></div>
+      <div class="stat"><strong id="control-count">--</strong><span>Broad-control highlights (editorial)</span></div>
+      <div class="stat"><strong id="privileged-count">--</strong><span>Marked privileged, including highlights</span></div>
+      <div class="stat"><strong id="other-count">--</strong><span>Not marked privileged in the catalog</span></div>
+    </section>
+    <aside class="notice">
+      <strong>A privilege map, not an inheritance chart.</strong> Connecting lines mean "grouped under," not "inherits permissions."
+      Microsoft does not give every role a universal numeric privilege level. The broad-control grouping is illustrative, not an official tier.
+      <strong>Not marked privileged does not mean low-risk or read-only.</strong>
+    </aside>
+    <section class="toolbar" aria-label="Filter and display controls">
+      <div class="field">
+        <label for="search">Find a role</label>
+        <input id="search" type="search" placeholder="Search role name, template ID, or functional area..." autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="privilege-filter">Microsoft designation</label>
+        <select id="privilege-filter">
+          <option value="all">All designations</option>
+          <option value="privileged">Marked privileged</option>
+          <option value="unmarked">Not marked privileged</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button id="expand" type="button">Expand all</button>
+        <button id="collapse" type="button">Collapse all</button>
+        <button id="reset" type="button">Reset</button>
+        <button id="print" type="button">Print / PDF</button>
+      </div>
+    </section>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+    <noscript><p>JavaScript is required to display this embedded role catalog and its interactive tree.</p></noscript>
+    <section aria-label="Role privilege tree">
+      <div class="root"><strong>Microsoft Entra ID</strong><small id="root-caption">Built-in directory roles</small></div>
+      <ul class="tree" id="tree"></ul>
+      <p class="empty" id="empty" hidden>No roles match these filters. Clear the search or reset the filters.</p>
+    </section>
+    <section class="method">
+      <h2>How to read this tree</h2>
+      <p><strong>Broad-control highlights:</strong> Global Administrator, Privileged Role Administrator, and Privileged Authentication Administrator are drawn out for their extensive administrative, role-assignment, or authentication-method powers. This is not an exhaustive list of paths to tenant compromise. Other privileged roles can also have substantial impact.</p>
+      <p><strong>Microsoft designation:</strong> "Marked privileged" reproduces the privileged-label flag in the source catalog. The designation is documented as preview. The other branch means only that this flag was absent in that snapshot; no independent safety rating is implied. Read access can still be privileged, so reader roles are not automatically placed in a lower band.</p>
+      <p><strong>Scope:</strong> This includes the entire "All roles" table in Microsoft's Entra ID permissions reference. It excludes custom roles, default user/guest permissions, Azure resource RBAC, and separate workload-specific role catalogs. Actual access depends on assignment scope, activation, licensing, resource ownership, and other permissions. Functional-area grouping is editorial; roles can span multiple products.</p>
+      <p><strong>Sources:</strong> <a href="https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference" target="_blank" rel="noopener noreferrer">Microsoft Entra built-in roles</a> and <a href="https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/privileged-roles-permissions" target="_blank" rel="noopener noreferrer">Privileged roles and permissions</a>. Source catalog updated <span id="source-updated">--</span>; retrieved 3 November 2026. Each role links to its full permission reference. This is a static public-documentation snapshot, not an inventory of assignments in your tenant.</p>
+    </section>
+    <footer><span>Self-contained HTML / no external scripts, fonts, or telemetry</span><span>Use the role reference, not this visualization alone, for access decisions.</span></footer>
+  </main>
+  <script id="catalog" type="application/json">
+  {
+  "retrieved": "2026-11-03",
+  "sourceUpdated": "2026-10-13T22:39:00Z",
+  "roles": [
+    {
+      "name": "Agent ID Administrator",
+      "id": "db506228-d27e-4b7d-95e5-295956d6615f",
+      "anchor": "#agent-id-administrator",
+      "privileged": true,
+      "family": "Applications, agents & AI"
+    },
+    {
+      "name": "Agent ID Developer",
+      "id": "adb2368d-a9be-41b5-8667-d96778e081b0",
+      "anchor": "#agent-id-developer",
+      "privileged": false,
+      "family": "Applications, agents & AI"
+    },
+    {
+      "name": "Agent Registry Administrator",
+      "id": "6b942400-691f-4bf0-9d12-d8a254a2baf5",
+      "anchor": "#agent-registry-administrator",
+      "privileged": false,
+      "family": "Applications, agents & AI"
+    },
+    {
+      "name": "AI Administrator",
+      "id": "d2562ede-74db-457e-a7b6-544e236ebb61",
+      "anchor": "#ai-administrator",
+      "privileged": true,
+      "family": "Applications, agents & AI"
+    },
+    {
+      "name": "AI Reader",
+      "id": "1fe13547-53f6-408d-ac04-7f8eed167b38",
+      "anchor": "#ai-reader",
+      "privileged": true,
+      "family": "Applications, agents & AI"
+    },
+    {
+      "name": "Application Administrator",
+      "id": "9b895d92-2cd3-44c7-9d02-a6ac2d5ea5c3",
+      "anchor": "#application-administrator",
+      "privileged": true,
+      "family": "Applications, agents & AI"
+    },
+    {
+      "name": "Application Developer",
+      "id": "cf1c38e5-3621-4004-a7cb-879624dced7c",
+      "anchor": "#application-developer",
+      "privileged": true,
+      "family": "Applications, agents & AI"
+    },
+    {
+      "name": "Attack Payload Author",
+      "id": "9c6df0f2-1e7c-4dc3-b195-66dfbd24aa8f",
+      "anchor": "#attack-payload-author",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Attack Simulation Administrator",
+      "id": "c430b396-e693-46cc-96f3-db01bf8bb62a",
+      "anchor": "#attack-simulation-administrator",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Attribute Assignment Administrator",
+      "id": "58a13ea3-c632-46ae-9ee0-9c0d43cd7f3d",
+      "anchor": "#attribute-assignment-administrator",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Attribute Assignment Reader",
+      "id": "ffd52fa5-98dc-465c-991d-fc073eb59f8f",
+      "anchor": "#attribute-assignment-reader",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Attribute Definition Administrator",
+      "id": "8424c6f0-a189-499e-bbd0-26c1753c96d4",
+      "anchor": "#attribute-definition-administrator",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Attribute Definition Reader",
+      "id": "1d336d2c-4ae8-42ef-9711-b3604ce3fc2c",
+      "anchor": "#attribute-definition-reader",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Attribute Log Administrator",
+      "id": "5b784334-f94b-471a-a387-e7219fc49ca2",
+      "anchor": "#attribute-log-administrator",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Attribute Log Reader",
+      "id": "9c99539d-8186-4804-835f-fd51ef9e2dcd",
+      "anchor": "#attribute-log-reader",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Attribute Provisioning Administrator",
+      "id": "ecb2c6bf-0ab6-418e-bd87-7986f8d63bbe",
+      "anchor": "#attribute-provisioning-administrator",
+      "privileged": true,
+      "family": "Applications, agents & AI"
+    },
+    {
+      "name": "Attribute Provisioning Reader",
+      "id": "422218e4-db15-4ef9-bbe0-8afb41546d79",
+      "anchor": "#attribute-provisioning-reader",
+      "privileged": true,
+      "family": "Applications, agents & AI"
+    },
+    {
+      "name": "Authentication Administrator",
+      "id": "c4e39bd9-1100-46d3-8c65-fb160da0071f",
+      "anchor": "#authentication-administrator",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Authentication Extensibility Administrator",
+      "id": "25a516ed-2fa0-40ea-a2d0-12923a21473a",
+      "anchor": "#authentication-extensibility-administrator",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Authentication Extensibility Password Administrator",
+      "id": "0b00bede-4072-4d22-b441-e7df02a1ef63",
+      "anchor": "#authentication-extensibility-password-administrator",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Authentication Policy Administrator",
+      "id": "0526716b-113d-4c15-b2c8-68e3c22b9f80",
+      "anchor": "#authentication-policy-administrator",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Azure DevOps Administrator",
+      "id": "e3973bdf-4987-49ae-837a-ba8e231c7286",
+      "anchor": "#azure-devops-administrator",
+      "privileged": false,
+      "family": "Applications, agents & AI"
+    },
+    {
+      "name": "Azure Information Protection Administrator",
+      "id": "7495fdc4-34c4-4d15-a289-98788ce399fd",
+      "anchor": "#azure-information-protection-administrator",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "B2C IEF Keyset Administrator",
+      "id": "aaf43236-0c0d-4d5f-883a-6955382ac081",
+      "anchor": "#b2c-ief-keyset-administrator",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "B2C IEF Policy Administrator",
+      "id": "3edaf663-341e-4475-9f94-5c398ef6c070",
+      "anchor": "#b2c-ief-policy-administrator",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Billing Administrator",
+      "id": "b0f54661-2d74-4c50-afa3-1ec803f12efe",
+      "anchor": "#billing-administrator",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Cloud App Security Administrator",
+      "id": "892c5842-a9a6-463a-8041-72aa08ca3cf6",
+      "anchor": "#cloud-app-security-administrator",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Cloud Application Administrator",
+      "id": "158c047a-c907-4556-b7ef-446551a6b5f7",
+      "anchor": "#cloud-application-administrator",
+      "privileged": true,
+      "family": "Applications, agents & AI"
+    },
+    {
+      "name": "Cloud Device Administrator",
+      "id": "7698a772-787b-4ac8-901f-60d6b08affd2",
+      "anchor": "#cloud-device-administrator",
+      "privileged": true,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Compliance Administrator",
+      "id": "17315797-102d-40b4-93e0-432062caca18",
+      "anchor": "#compliance-administrator",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Compliance Data Administrator",
+      "id": "e6d1a23a-da11-4be4-9570-befc86d067a7",
+      "anchor": "#compliance-data-administrator",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Conditional Access Administrator",
+      "id": "b1be1c3e-b65d-4f19-8427-f6fa0d97feb9",
+      "anchor": "#conditional-access-administrator",
+      "privileged": true,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Customer Delegated Admin Relationship Administrator",
+      "id": "fc8ad4e2-40e4-4724-8317-bcda7503ecbf",
+      "anchor": "#customer-delegated-admin-relationship-administrator",
+      "privileged": false,
+      "family": "Partner & delegated administration"
+    },
+    {
+      "name": "Customer Lockbox Access Approver",
+      "id": "5c4f9dcd-47dc-4cf7-8c9a-9e4207cbfc91",
+      "anchor": "#customer-lockbox-access-approver",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Desktop Analytics Administrator",
+      "id": "38a96431-2bdf-4b4c-8b6e-5d3d8abac1a4",
+      "anchor": "#desktop-analytics-administrator",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Directory Readers",
+      "id": "88d8e3e3-8f55-4a1e-953a-9b9898b8876b",
+      "anchor": "#directory-readers",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Directory Synchronization Accounts",
+      "id": "d29b2b05-8046-44ba-8758-1e26182fcf32",
+      "anchor": "#directory-synchronization-accounts",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Directory Writers",
+      "id": "9360feb5-f418-4baa-8175-e2a00bac4301",
+      "anchor": "#directory-writers",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Domain Name Administrator",
+      "id": "8329153b-31d0-4727-b945-745eb3bc5f31",
+      "anchor": "#domain-name-administrator",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Dragon Administrator",
+      "id": "e93e3737-fa85-474a-aee4-7d3fb86510f3",
+      "anchor": "#dragon-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Dynamics 365 Administrator",
+      "id": "44367163-eba1-44c3-98af-f5787879f96a",
+      "anchor": "#dynamics-365-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Dynamics 365 Business Central Administrator",
+      "id": "963797fb-eb3b-4cde-8ce3-5878b3f32a3f",
+      "anchor": "#dynamics-365-business-central-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Edge Administrator",
+      "id": "3f1acade-1e04-4fbc-9b69-f0302cd84aef",
+      "anchor": "#edge-administrator",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Entra Backup Administrator",
+      "id": "b6a27b2b-f905-4b2e-81b5-0d90e0ef1fdb",
+      "anchor": "#entra-backup-administrator",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Entra Backup Reader",
+      "id": "f42252d9-5400-4d7b-b9ef-cc582dbb8577",
+      "anchor": "#entra-backup-reader",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Entra SOC Identity Responder",
+      "id": "58f930cc-fcf4-4152-852c-1d7dbf502139",
+      "anchor": "#entra-soc-identity-responder",
+      "privileged": true,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Exchange Administrator",
+      "id": "29232cdf-9323-42fd-ade2-1d097af3e4de",
+      "anchor": "#exchange-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Exchange Backup Administrator",
+      "id": "49eb8f75-97e9-4e37-9b2b-6c3ebfcffa31",
+      "anchor": "#exchange-backup-administrator",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Exchange Recipient Administrator",
+      "id": "31392ffb-586c-42d1-9346-e59415a2cc4e",
+      "anchor": "#exchange-recipient-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Extended Directory User Administrator",
+      "id": "dd13091a-6207-4fc0-82ba-3641e056ab95",
+      "anchor": "#extended-directory-user-administrator",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "External ID User Flow Administrator",
+      "id": "6e591065-9bad-43ed-90f3-e9424366d2f0",
+      "anchor": "#external-id-user-flow-administrator",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "External ID User Flow Attribute Administrator",
+      "id": "0f971eea-41eb-4569-a71e-57bb8a3eff1e",
+      "anchor": "#external-id-user-flow-attribute-administrator",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "External Identity Provider Administrator",
+      "id": "be2f45a1-457d-42af-a067-6ec1fa63bc45",
+      "anchor": "#external-identity-provider-administrator",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Fabric Administrator",
+      "id": "a9ea8996-122f-4c74-9520-8edcd192826c",
+      "anchor": "#fabric-administrator",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Global Administrator",
+      "id": "62e90394-69f5-4237-9190-012177145e10",
+      "anchor": "#global-administrator",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Global Reader",
+      "id": "f2ef992c-3afb-46b9-b7cf-a126ee74c451",
+      "anchor": "#global-reader",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Global Secure Access Administrator",
+      "id": "ac434307-12b9-4fa1-a708-88bf58caabc1",
+      "anchor": "#global-secure-access-administrator",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Global Secure Access Log Reader",
+      "id": "843318fb-79a6-4168-9e6f-aa9a07481cc4",
+      "anchor": "#global-secure-access-log-reader",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Groups Administrator",
+      "id": "fdd7a751-b60b-444a-984c-02652fe8fa1c",
+      "anchor": "#groups-administrator",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Guest Inviter",
+      "id": "95e79109-95c0-4d8e-aee3-d01accf2d47b",
+      "anchor": "#guest-inviter",
+      "privileged": false,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Helpdesk Administrator",
+      "id": "729827e3-9c14-49f7-bb1b-9608f156bbb8",
+      "anchor": "#helpdesk-administrator",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Hybrid Identity Administrator",
+      "id": "8ac3fc64-6eca-42ea-9e69-59f4c7b60eb2",
+      "anchor": "#hybrid-identity-administrator",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Identity Governance Administrator",
+      "id": "45d8d3c5-c802-45c6-b32a-1d70b5e1e86e",
+      "anchor": "#identity-governance-administrator",
+      "privileged": true,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Insights Administrator",
+      "id": "eb1f4a8d-243a-41f0-9fbd-c7cdf6c5ef7c",
+      "anchor": "#insights-administrator",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Insights Analyst",
+      "id": "25df335f-86eb-4119-b717-0ff02de207e9",
+      "anchor": "#insights-analyst",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Insights Business Leader",
+      "id": "31e939ad-9672-4796-9c2e-873181342d2d",
+      "anchor": "#insights-business-leader",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Intune Administrator",
+      "id": "3a2c62db-5318-420d-8d74-23affee5d9d5",
+      "anchor": "#intune-administrator",
+      "privileged": true,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "IoT Device Administrator",
+      "id": "2ea5ce4c-b2d8-4668-bd81-3680bd2d227a",
+      "anchor": "#iot-device-administrator",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Kaizala Administrator",
+      "id": "74ef975b-6605-40af-a5d2-b9539d836353",
+      "anchor": "#kaizala-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Knowledge Administrator",
+      "id": "b5a8dcf3-09d5-43a9-a639-8e29ef291470",
+      "anchor": "#knowledge-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Knowledge Manager",
+      "id": "744ec460-397e-42ad-a462-8b3f9747a02c",
+      "anchor": "#knowledge-manager",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "License Administrator",
+      "id": "4d6ac14f-3453-41d0-bef9-a3e0c569773a",
+      "anchor": "#license-administrator",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Lifecycle Workflows Administrator",
+      "id": "59d46f88-662b-457b-bceb-5c3809e5908f",
+      "anchor": "#lifecycle-workflows-administrator",
+      "privileged": true,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Message Center Privacy Reader",
+      "id": "ac16e43d-7b2d-40e0-ac05-243ff356ab5b",
+      "anchor": "#message-center-privacy-reader",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Message Center Reader",
+      "id": "790c1fb9-7f7d-4f88-86a1-ef1f95c05c1b",
+      "anchor": "#message-center-reader",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Microsoft 365 Backup Administrator",
+      "id": "1707125e-0aa2-4d4d-8655-a7c786c76a25",
+      "anchor": "#microsoft-365-backup-administrator",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Microsoft 365 Migration Administrator",
+      "id": "8c8b803f-96e1-4129-9349-20738d9f9652",
+      "anchor": "#microsoft-365-migration-administrator",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Microsoft Entra Joined Device Local Administrator",
+      "id": "9f06204d-73c1-4d4c-880a-6edb90606fd8",
+      "anchor": "#microsoft-entra-joined-device-local-administrator",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Microsoft Graph Data Connect Administrator",
+      "id": "ee67aa9c-e510-4759-b906-227085a7fd4d",
+      "anchor": "#microsoft-graph-data-connect-administrator",
+      "privileged": false,
+      "family": "Applications, agents & AI"
+    },
+    {
+      "name": "Microsoft Hardware Warranty Administrator",
+      "id": "1501b917-7653-4ff9-a4b5-203eaf33784f",
+      "anchor": "#microsoft-hardware-warranty-administrator",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Microsoft Hardware Warranty Specialist",
+      "id": "281fe777-fb20-4fbb-b7a3-ccebce5b0d96",
+      "anchor": "#microsoft-hardware-warranty-specialist",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Network Administrator",
+      "id": "d37c8bed-0711-4417-ba38-b4abe66ce4c2",
+      "anchor": "#network-administrator",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Office Apps Administrator",
+      "id": "2b745bdf-0803-4d80-aa65-822c4493daac",
+      "anchor": "#office-apps-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Organizational Branding Administrator",
+      "id": "92ed04bf-c94a-4b82-9729-b799a7a4c178",
+      "anchor": "#organizational-branding-administrator",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Organizational Data Source Administrator",
+      "id": "9d70768a-0cbc-4b4c-aea3-2e124b2477f4",
+      "anchor": "#organizational-data-source-administrator",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Organizational Messages Approver",
+      "id": "e48398e2-f4bb-4074-8f31-4586725e205b",
+      "anchor": "#organizational-messages-approver",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Organizational Messages Writer",
+      "id": "507f53e4-4e52-4077-abd3-d2e1558b6ea2",
+      "anchor": "#organizational-messages-writer",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Partner Tier1 Support",
+      "id": "4ba39ca4-527c-499a-b93d-d9b492c50246",
+      "anchor": "#partner-tier1-support",
+      "privileged": true,
+      "family": "Partner & delegated administration"
+    },
+    {
+      "name": "Partner Tier2 Support",
+      "id": "e00e864a-17c5-4a4b-9c06-f5b95a8d5bd8",
+      "anchor": "#partner-tier2-support",
+      "privileged": true,
+      "family": "Partner & delegated administration"
+    },
+    {
+      "name": "Password Administrator",
+      "id": "966707d0-3269-4727-9be2-8c3a10f19b9d",
+      "anchor": "#password-administrator",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "People Administrator",
+      "id": "024906de-61e5-49c8-8572-40335f1e0e10",
+      "anchor": "#people-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Permissions Management Administrator",
+      "id": "af78dc32-cf4d-46f9-ba4e-4428526346b5",
+      "anchor": "#permissions-management-administrator",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Places Administrator",
+      "id": "78b0ccd1-afc2-4f92-9116-b41aedd09592",
+      "anchor": "#places-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Power Platform Administrator",
+      "id": "11648597-926c-4cf3-9c36-bcebb0ba8dcc",
+      "anchor": "#power-platform-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Printer Administrator",
+      "id": "644ef478-e28f-4e28-b9dc-3fdde9aa0b1f",
+      "anchor": "#printer-administrator",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Printer Technician",
+      "id": "e8cef6f1-e4bd-4ea8-bc07-4b8d950f4477",
+      "anchor": "#printer-technician",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Privileged Authentication Administrator",
+      "id": "7be44c8a-adaf-4e2a-84d6-ab2649e08a13",
+      "anchor": "#privileged-authentication-administrator",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Privileged Role Administrator",
+      "id": "e8611ab8-c189-46e8-94e1-60213ab1f814",
+      "anchor": "#privileged-role-administrator",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "Purview Workload Content Administrator",
+      "id": "3f04f91a-4ad7-4bd3-bcfa-49882ea1a88a",
+      "anchor": "#purview-workload-content-administrator",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Purview Workload Content Reader",
+      "id": "e07494ad-1654-4dd2-922e-6f81a71bf00f",
+      "anchor": "#purview-workload-content-reader",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Purview Workload Content Writer",
+      "id": "02d5655b-c1cf-4e5f-98da-5fb919085bf6",
+      "anchor": "#purview-workload-content-writer",
+      "privileged": false,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Reports Reader",
+      "id": "4a5d8f65-41da-4de4-8968-e035b65339cf",
+      "anchor": "#reports-reader",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Search Administrator",
+      "id": "0964bb5e-9bdb-4d7b-ac29-58e794862a40",
+      "anchor": "#search-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Search Editor",
+      "id": "8835291a-918c-4fd7-a9ce-faa49f0cf7d9",
+      "anchor": "#search-editor",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Security Administrator",
+      "id": "194ae4cb-b126-40b2-bd5b-6091b380977d",
+      "anchor": "#security-administrator",
+      "privileged": true,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Security Operator",
+      "id": "5f2222b1-57c3-48ba-8ad5-d4759f1fde6f",
+      "anchor": "#security-operator",
+      "privileged": true,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Security Reader",
+      "id": "5d6b6bb7-de71-4623-b4af-96380a352509",
+      "anchor": "#security-reader",
+      "privileged": true,
+      "family": "Security, compliance & network"
+    },
+    {
+      "name": "Service Support Administrator",
+      "id": "f023fd81-a637-4b56-95fd-791ac0226033",
+      "anchor": "#service-support-administrator",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "SharePoint Administrator",
+      "id": "f28a1f50-f6e7-4571-818b-6a12f2af6b6c",
+      "anchor": "#sharepoint-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "SharePoint Advanced Management Administrator",
+      "id": "99009c4a-3b3f-4957-82a9-9d35e12db77e",
+      "anchor": "#sharepoint-advanced-management-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "SharePoint Backup Administrator",
+      "id": "9d3e04ba-3ee4-4d1b-a3a7-9aef423a09be",
+      "anchor": "#sharepoint-backup-administrator",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "SharePoint Embedded Administrator",
+      "id": "1a7d78b6-429f-476b-b8eb-35fb715fffd4",
+      "anchor": "#sharepoint-embedded-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Skype for Business Administrator",
+      "id": "75941009-915a-4869-abe7-691bff18279e",
+      "anchor": "#skype-for-business-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Teams Administrator",
+      "id": "69091246-20e8-4a56-aa4d-066075b2a7a8",
+      "anchor": "#teams-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Teams Communications Administrator",
+      "id": "baf37b3a-610e-45da-9e62-d9d1e5e8914b",
+      "anchor": "#teams-communications-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Teams Communications Support Engineer",
+      "id": "f70938a0-fc10-4177-9e90-2178f8765737",
+      "anchor": "#teams-communications-support-engineer",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Teams Communications Support Specialist",
+      "id": "fcf91098-03e3-41a9-b5ba-6f0ec8188a12",
+      "anchor": "#teams-communications-support-specialist",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Teams Devices Administrator",
+      "id": "3d762c5a-1b6c-493f-843e-55a3b42923d4",
+      "anchor": "#teams-devices-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Teams External Collaboration Administrator",
+      "id": "2fe872fb-daa8-4afc-8f6c-53c4565cfef4",
+      "anchor": "#teams-external-collaboration-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Teams Reader",
+      "id": "1076ac91-f3d9-41a7-a339-dcdf5f480acc",
+      "anchor": "#teams-reader",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Teams Telephony Administrator",
+      "id": "aa38014f-0993-46e9-9b45-30501a20909d",
+      "anchor": "#teams-telephony-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Tenant Creator",
+      "id": "112ca1a2-15ad-4102-995e-45b0bc479a6a",
+      "anchor": "#tenant-creator",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Tenant Governance Administrator",
+      "id": "1981f584-96e9-4a6f-95b0-f522373f8fae",
+      "anchor": "#tenant-governance-administrator",
+      "privileged": true,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Tenant Governance Reader",
+      "id": "e0a4caa6-fe82-443f-b92f-d87341d17b2e",
+      "anchor": "#tenant-governance-reader",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Tenant Governance Relationship Administrator",
+      "id": "b8e31d83-1534-480f-9b10-0338ded51b7e",
+      "anchor": "#tenant-governance-relationship-administrator",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Tenant Governance Relationship Reader",
+      "id": "124577f8-48ed-456a-839f-13b419002e33",
+      "anchor": "#tenant-governance-relationship-reader",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Usage Summary Reports Reader",
+      "id": "75934031-6c7e-415a-99d7-48dbd49e875e",
+      "anchor": "#usage-summary-reports-reader",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "User Administrator",
+      "id": "fe930be7-5e62-47db-91af-98c3a49a38b1",
+      "anchor": "#user-administrator",
+      "privileged": true,
+      "family": "Identity & authentication"
+    },
+    {
+      "name": "User Experience Success Manager",
+      "id": "27460883-1df1-4691-b032-3b79643e5e63",
+      "anchor": "#user-experience-success-manager",
+      "privileged": false,
+      "family": "Governance, organization & insights"
+    },
+    {
+      "name": "Virtual Visits Administrator",
+      "id": "e300d9e7-4a2b-4295-9eff-f1c78b36cc98",
+      "anchor": "#virtual-visits-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Viva Glint Tenant Administrator",
+      "id": "0ec3f692-38d6-4d14-9e69-0377ca7797ad",
+      "anchor": "#viva-glint-tenant-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Viva Goals Administrator",
+      "id": "92b086b3-e367-4ef2-b869-1de128fb986e",
+      "anchor": "#viva-goals-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Viva Pulse Administrator",
+      "id": "87761b17-1ed2-4af3-9acd-92a150038160",
+      "anchor": "#viva-pulse-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    },
+    {
+      "name": "Windows 365 Administrator",
+      "id": "11451d60-acb2-45eb-a7d6-43d0f0125c13",
+      "anchor": "#windows-365-administrator",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Windows Update Deployment Administrator",
+      "id": "32696413-001a-46ae-978c-ce0f6b3620d2",
+      "anchor": "#windows-update-deployment-administrator",
+      "privileged": false,
+      "family": "Devices, infrastructure & recovery"
+    },
+    {
+      "name": "Yammer Administrator",
+      "id": "810a2642-a034-447f-a5e8-41beaa378541",
+      "anchor": "#yammer-administrator",
+      "privileged": false,
+      "family": "Collaboration & business services"
+    }
+  ]
+}
+  </script>
+  <script>
+    "use strict";
+    const catalog = JSON.parse(document.getElementById("catalog").textContent);
+    const roles = catalog.roles;
+    const source = "https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference";
+    const highlights = {
+      "Global Administrator": "Extensive administration across Entra ID and connected Microsoft services. Some specialist permissions still require separate role assignments; this role is not a literal superset of every role.",
+      "Privileged Role Administrator": "Controls Entra directory role assignments and Privileged Identity Management. The ability to grant administrative roles makes this a broad-control role.",
+      "Privileged Authentication Administrator": "Can manage authentication methods for all users, including administrators. This is broad authentication control, not general control of every service."
+    };
+    const bands = [
+      { id: "control", index: "01 / Broad-control highlights", title: "Tenant-wide control paths", note: "An editorial spotlight on three especially powerful roles. All three are also marked privileged by Microsoft; they appear only here to avoid duplicates." },
+      { id: "privileged", index: "02 / Microsoft designation", title: "Other marked privileged roles", note: "Roles carrying Microsoft's privileged flag, apart from the three highlights. These roles differ in scope and capability; they are not ranked against each other." },
+      { id: "unmarked", index: "03 / Microsoft designation", title: "Not marked privileged", note: "No privileged flag in the source catalog. Includes administrators, operators, creators, and readers. This is not a low-risk tier." }
+    ];
+    const tree = document.getElementById("tree");
+    const search = document.getElementById("search");
+    const filter = document.getElementById("privilege-filter");
+    const roleEntries = [];
+    const familyEntries = [];
+    const branchEntries = [];
+    function element(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+    function bandOf(role) {
+      return Object.hasOwn(highlights, role.name) ? "control" : role.privileged ? "privileged" : "unmarked";
+    }
+    function createRole(role) {
+      const item = element("li", "role");
+      item.dataset.templateId = role.id;
+      const detail = element("details", "role-detail");
+      const summary = element("summary", "role-summary");
+      summary.append(element("span", "role-name", role.name));
+      detail.append(summary);
+      const body = element("div", "role-body");
+      body.append(element("span", "badge", role.privileged ? "Microsoft: marked privileged" : "Microsoft: not marked privileged"));
+      if (Object.hasOwn(highlights, role.name)) body.append(element("p", "", highlights[role.name]));
+      body.append(element("p", "", "Functional area: " + role.family));
+      body.append(element("span", "", "Role template ID"));
+      body.append(element("code", "", role.id));
+      const link = element("a", "", "View full permissions on Microsoft Learn");
+      link.href = source + role.anchor;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      body.append(link);
+      detail.append(body);
+      item.append(detail);
+      roleEntries.push({ role, item, detail, haystack: [role.name, role.id, role.family].join(" ").toLowerCase() });
+      return item;
+    }
+    for (const band of bands) {
+      const members = roles.filter(role => bandOf(role) === band.id);
+      const branch = element("li", "branch");
+      branch.dataset.band = band.id;
+      const header = element("header", "branch-head");
+      header.append(element("div", "branch-index", band.index));
+      header.append(element("h2", "", band.title));
+      const count = element("span", "count", members.length + " roles");
+      header.append(count, element("p", "", band.note));
+      branch.append(header);
+      const families = element("ul", "families");
+      const names = band.id === "control" ? ["Broad administrative authority"] : [...new Set(members.map(role => role.family))].sort();
+      for (const name of names) {
+        const familyMembers = band.id === "control" ? members : members.filter(role => role.family === name);
+        const familyItem = element("li", "family");
+        const box = element("details", "family-box");
+        box.open = true;
+        const title = element("summary", "family-title", name);
+        const familyCount = element("span", "family-total", "(" + familyMembers.length + ")");
+        title.append(familyCount);
+        const list = element("ul", "roles");
+        for (const role of familyMembers) list.append(createRole(role));
+        box.append(title, list);
+        familyItem.append(box);
+        families.append(familyItem);
+        familyEntries.push({ item: familyItem, box, count: familyCount, members: familyMembers });
+      }
+      branch.append(families);
+      tree.append(branch);
+      branchEntries.push({ branch, count, members });
+    }
+    const privilegedCount = roles.filter(role => role.privileged).length;
+    document.getElementById("total-count").textContent = roles.length;
+    document.getElementById("control-count").textContent = roles.filter(role => bandOf(role) === "control").length;
+    document.getElementById("privileged-count").textContent = privilegedCount;
+    document.getElementById("other-count").textContent = roles.length - privilegedCount;
+    document.getElementById("source-updated").textContent = catalog.sourceUpdated.slice(0, 10);
+    document.getElementById("root-caption").textContent = roles.length + " built-in directory roles / 3 display bands";
+    function applyFilters() {
+      const query = search.value.trim().toLowerCase();
+      const tokens = query.split(/\s+/).filter(Boolean);
+      const visible = new Set();
+      for (const entry of roleEntries) {
+        const matchesText = tokens.every(token => entry.haystack.includes(token));
+        const matchesPrivilege = filter.value === "all" || (filter.value === "privileged" ? entry.role.privileged : !entry.role.privileged);
+        const show = matchesText && matchesPrivilege;
+        entry.item.hidden = !show;
+        if (show) visible.add(entry.role.id);
+      }
+      for (const entry of familyEntries) {
+        const count = entry.members.filter(role => visible.has(role.id)).length;
+        entry.item.hidden = count === 0;
+        entry.count.textContent = "(" + count + ")";
+        if (query || filter.value !== "all") entry.box.open = count > 0;
+      }
+      for (const entry of branchEntries) {
+        const count = entry.members.filter(role => visible.has(role.id)).length;
+        entry.branch.hidden = count === 0;
+        entry.count.textContent = count + " of " + entry.members.length + " roles";
+        entry.branch.classList.remove("is-first", "is-last");
+      }
+      const visibleBranches = branchEntries.filter(entry => !entry.branch.hidden);
+      if (visibleBranches.length) {
+        visibleBranches[0].branch.classList.add("is-first");
+        visibleBranches[visibleBranches.length - 1].branch.classList.add("is-last");
+      }
+      tree.style.gridTemplateColumns = "repeat(" + Math.max(1, visibleBranches.length) + ", minmax(0, 1fr))";
+      document.getElementById("status").textContent = "Showing " + visible.size + " of " + roles.length + " roles. Catalog totals above do not change with filters.";
+      document.getElementById("empty").hidden = visible.size !== 0;
+      document.querySelector(".root").hidden = visible.size === 0;
+      tree.hidden = visible.size === 0;
+    }
+    search.addEventListener("input", applyFilters);
+    filter.addEventListener("change", applyFilters);
+    document.getElementById("expand").addEventListener("click", () => {
+      for (const entry of familyEntries) if (!entry.item.hidden) entry.box.open = true;
+      for (const entry of roleEntries) if (!entry.item.hidden) entry.detail.open = true;
+    });
+    document.getElementById("collapse").addEventListener("click", () => {
+      for (const entry of roleEntries) entry.detail.open = false;
+      for (const entry of familyEntries) entry.box.open = false;
+    });
+    document.getElementById("reset").addEventListener("click", () => {
+      search.value = "";
+      filter.value = "all";
+      for (const entry of familyEntries) entry.box.open = true;
+      for (const entry of roleEntries) entry.detail.open = false;
+      applyFilters();
+      search.focus();
+    });
+    let printState;
+    window.addEventListener("beforeprint", () => {
+      if (printState) return;
+      printState = familyEntries.map(entry => entry.box.open);
+      for (const entry of familyEntries) if (!entry.item.hidden) entry.box.open = true;
+    });
+    window.addEventListener("afterprint", () => {
+      if (!printState) return;
+      familyEntries.forEach((entry, index) => { entry.box.open = printState[index]; });
+      printState = undefined;
+    });
+    document.getElementById("print").addEventListener("click", () => window.print());
+    applyFilters();
+  </script>
+<script src="../assets/resource-nav.js" defer></script>
+</body>
+</html>
