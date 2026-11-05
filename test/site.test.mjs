@@ -34,6 +34,8 @@ test("category pages contain only their own cards and mark current navigation", 
     assert.equal((html.match(/data-resource /g) || []).length, 1);
     assert.ok(html.includes(`href="${resources[index].split("/")[1]}"`));
     assert.ok(html.includes(`href="../${category}/" aria-current="page"`));
+    assert.ok(html.includes(`<body class="category-page ${category}">`));
+    assert.match(html, /dashboard\.css\?v=4/);
     for (const other of resources.filter((_, position) => position !== index)) {
       assert.ok(!html.includes(other.split("/")[1]), `${category} contains a card from another category`);
     }
