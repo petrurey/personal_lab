@@ -97,7 +97,7 @@ test("hosted plan explains local-only original access without a replacement road
 test("published files exclude internal resources and active credentials", async () => {
   const publicFiles = [...pages, "404.html"];
   for (const name of await readdir(resolve(root, "assets"))) publicFiles.push(`assets/${name}`);
-  for (const name of ["package.json", "package-lock.json", "server.mjs", "authorization.mjs", "server.test.mjs", "tenant.ps1"]) {
+  for (const name of ["package.json", "package-lock.json", "server.mjs", "authorization.mjs", "server.test.mjs", "tenant.ps1", "automation.ps1"]) {
     publicFiles.push(`labs/app-access-sample/${name}`);
   }
   for (const file of publicFiles) {
@@ -139,7 +139,7 @@ test("preview serves the exact original plan only at its designated route and bl
     const url = output.match(/http:\/\/127\.0\.0\.1:\d+/)?.[0];
     assert.ok(url, "Preview must report a usable URL.");
     for (const page of pages) assert.equal((await fetch(`${url}/${page}`)).status, 200, page);
-    for (const [file, type] of [["tenant.ps1", "text/plain"], ["server.mjs", "text/javascript"], ["package-lock.json", "application/json"]]) {
+    for (const [file, type] of [["tenant.ps1", "text/plain"], ["automation.ps1", "text/plain"], ["server.mjs", "text/javascript"], ["package-lock.json", "application/json"]]) {
       const source = await fetch(`${url}/labs/app-access-sample/${file}`);
       assert.equal(source.status, 200, file);
       assert.ok(source.headers.get("content-type").startsWith(type), file);
@@ -152,7 +152,7 @@ test("preview serves the exact original plan only at its designated route and bl
     assert.equal(head.status, 200);
     assert.equal(await head.text(), "");
     assert.deepEqual(await readFile(originalPlan), originalBytes);
-    for (const file of [".private/identity-development-plan.html", ".git/config", "package.json", "scripts/import-sources.mjs", "missing.html", "labs/app-access-sample/node_modules/openid-client/package.json", "labs/app-access-sample/app-access-lab.json", "labs/app-access-sample/.env"]) {
+    for (const file of [".private/identity-development-plan.html", ".git/config", "package.json", "scripts/import-sources.mjs", "missing.html", "labs/app-access-sample/node_modules/openid-client/package.json", "labs/app-access-sample/app-access-lab.json", "labs/app-access-sample/.app-access-lab-state.json", "labs/app-access-sample/.app-access-lab-test.cer", "labs/app-access-sample/.env"]) {
       assert.equal((await fetch(`${url}/${file}`)).status, 404, file);
     }
     assert.equal(failures.length, 0);

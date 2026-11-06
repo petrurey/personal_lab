@@ -5,3 +5,5 @@ test-results/
 *.log
 labs/app-access-sample/app-access-lab.json
 .env
+.app-access-lab-state.json
+.app-access-lab-*.cer

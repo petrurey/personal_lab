@@ -97,7 +97,51 @@ test("all authored PowerShell blocks and tenant automation parse when PowerShell
   const scripts = [...html.matchAll(/<pre data-file="[^"]+\.ps1"[^>]*><code>([\s\S]*?)<\/code><\/pre>/g)]
     .map(match => match[1].replaceAll("&gt;", ">").replaceAll("&lt;", "<").replaceAll("&amp;", "&"));
   const command = `$scripts = [Console]::In.ReadToEnd() | ConvertFrom-Json; foreach ($script in $scripts) { $tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseInput($script,[ref]$tokens,[ref]$errors) | Out-Null; if ($errors.Count) { $errors | ForEach-Object { [Console]::Error.WriteLine($_.Message) }; exit 1 } }`;
-  const result = spawnSync("pwsh", ["-NoProfile", "-Command", command], { input: JSON.stringify([...scripts, await read("labs/app-access-sample/tenant.ps1")]), encoding: "utf8" });
+  const result = spawnSync("pwsh", ["-NoProfile", "-Command", command], { input: JSON.stringify([...scripts,
+    await read("labs/app-access-sample/tenant.ps1"), await read("labs/app-access-sample/automation.ps1")]), encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
   assert.ok(scripts.length >= 12);
+});
+
+test("automation routes declare completeness and replace inventory with matching configuration", async () => {
+  const html = await read("labs/app-access-lab.html");
+  const modules = new Map([...html.matchAll(/<section class="module" id="(a\d\d)"[\s\S]*?<\/section>/g)]
+    .map(match => [match[1], match[0]]));
+  for (const [id, module] of modules) {
+    if (id === "a13") continue;
+    assert.match(module, /class="automation" data-parity="(?:complete|shared|manual-only)"/, id);
+    if (["a01", "a05", "a11"].includes(id)) {
+      assert.match(module, /data-parity="manual-only"/);
+      assert.doesNotMatch(module, /<pre data-file="[^"]+\.ps1"/);
+    } else {
+      assert.match(module, /<strong>Result(?: after the shared steps)?:<\/strong>/, id);
+      if (!["a07", "a09"].includes(id)) assert.match(module, /<strong>Shared(?:[^<]*)<\/strong>/, id);
+    }
+  }
+  for (const [id, commands] of Object.entries({
+    a00: ["Initialize-LabAutomation", "New-LabUsers"],
+    a02: ["New-LabRegistration", "New-LabDirectoryRole"],
+    a03: ["New-LabTemplateApp", "Set-LabSaml", "Add-LabDefaultAssignment"],
+    a04: ["New-LabProxy", "Set-LabProxyKcd"],
+    a06: ["Set-LabEmailClaim", "Set-LabSamlDisplayClaim", "Set-LabConsentWorkflow", "Restore-LabConsentWorkflow"],
+    a07: ["New-LabRegistration", "Use-LabClient", "no consent grant, roles or user assignments"],
+    a08: ["Set-LabDelegatedPermission -Consent", "New-LabApi", "Set-LabApiApplicationRole", "Set-LabApplicationPermission", "New-LabCredential"],
+    a09: ["Set-LabUserRoles", "Add-LabAppAssignment", "New-LabReaderGroup"],
+    a10: ["-Platform Spa", "-Audience AzureADMultipleOrgs", "second-tenant"],
+    a12: ["New-LabLogExport", "30-day retention", "SignInLogs", "AuditLogs"],
+    a14: ["Lab.Observer", "Remove-LabAssignment", "Remove-LabReaderMembership", "New-LabMfaPolicy", "state='enabled'"],
+    a15: ["Remove-LabAutomation", "Remove-LabLogExport"]
+  })) for (const command of commands) assert.ok(modules.get(id).includes(command), `${id}: ${command}`);
+  assert.doesNotMatch(modules.get("a07"), /-Action Setup|Set-LabUserRoles|Add-LabAppAssignment/);
+});
+
+test("PowerShell offline contracts reproduce the portal configuration without tenant calls", t => {
+  const result = spawnSync("pwsh", ["-NoProfile", "-File", resolve(root, "test", "app-automation.test.ps1")],
+    { encoding: "utf8", timeout: 60_000 });
+  if (result.error?.code === "ENOENT") {
+    t.skip("PowerShell 7 is unavailable.");
+    return;
+  }
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /Offline automation contracts passed/);
 });
