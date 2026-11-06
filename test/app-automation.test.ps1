@@ -24,11 +24,39 @@ function Get-LabMockCollection([string]$Path) {
         if ($key.StartsWith("$Path/") -and $key.Substring($Path.Length+1) -notmatch '/') { $script:Db[$key] }
     }
 }
+function Get-CoreConfiguration {
+    $web=@(Get-LabMockCollection '/applications' | Where-Object displayName -eq 'APP-ACCESS-LAB-Web')[0]
+    $instance=@(Get-LabMockCollection '/servicePrincipals' | Where-Object appId -eq $web.appId)[0]
+    $users=@(Get-LabMockCollection '/users' | Sort-Object userPrincipalName | ForEach-Object {
+        [ordered]@{upn=$_.userPrincipalName;enabled=$_.accountEnabled;type=$_.userType;changePassword=$_.passwordProfile.forceChangePasswordNextSignIn}
+    })
+    $roles=@($web.appRoles | Sort-Object value | ForEach-Object {
+        [ordered]@{value=$_.value;displayName=$_.displayName;description=$_.description;types=$_.allowedMemberTypes;enabled=$_.isEnabled}
+    })
+    $assignments=@(Get-LabMockCollection "/servicePrincipals/$($instance.id)/appRoleAssignedTo" | ForEach-Object {
+        $item=$_
+        [ordered]@{upn=$script:Db["/users/$($item.principalId)"].userPrincipalName;role=@($web.appRoles | Where-Object id -eq $item.appRoleId)[0].value}
+    })
+    $grants=@(Get-LabMockCollection '/oauth2PermissionGrants' | Where-Object clientId -eq $instance.id | ForEach-Object {
+        [ordered]@{scope=$_.scope;type=$_.consentType;resource=$script:Db["/servicePrincipals/$($_.resourceId)"].appId}
+    })
+    [ordered]@{users=$users;audience=$web.signInAudience;description=$web.description;web=$web.web
+        publicClient=$web.isFallbackPublicClient;requested=$web.requiredResourceAccess;roles=$roles
+        enabled=$instance.accountEnabled;assignmentRequired=$instance.appRoleAssignmentRequired;tags=$instance.tags
+        assignments=$assignments;grants=$grants} | ConvertTo-Json -Depth 30 -Compress
+}
 function Read-Host {
     param([string]$Prompt, [switch]$AsSecureString)
     if ($AsSecureString) { return ConvertTo-SecureString 'offline-password-only' -AsPlainText -Force }
-    if ($Prompt -like '*authorize writes*') { return 'APP-ACCESS-LAB' }
+    if ($Prompt -match 'authorize.*writes') { return 'APP-ACCESS-LAB' }
     if ($Prompt -like '*resource group*') { return 'rg-app-access-lab' }
+    if ($script:RunDirect) {
+        if ($Prompt -eq 'Administrator USER object GUID') { return $script:Admin }
+        if ($Prompt -eq 'Lab primary domain (without @)') { return 'offline.onmicrosoft.com' }
+        if ($Prompt -eq 'Web registration OBJECT GUID') { return @(Get-LabMockCollection '/applications' | Where-Object displayName -eq 'APP-ACCESS-LAB-Web')[0].id }
+        if ($Prompt -eq 'Web enterprise app SP GUID') { return @(Get-LabMockCollection '/servicePrincipals' | Where-Object displayName -eq 'APP-ACCESS-LAB-Web')[0].id }
+        if ($Prompt -eq 'Allowed USER object GUID') { return @(Get-LabMockCollection '/users' | Where-Object displayName -eq 'lab-app-allowed')[0].id }
+    }
     $script:LabTenantId
 }
 function Connect-MgGraph {
@@ -159,11 +187,11 @@ $temporary=Join-Path ([IO.Path]::GetTempPath()) ("app-automation-contract-"+[gui
 try {
     Set-Location -LiteralPath $temporary
     $script:Admin=[guid]::NewGuid().ToString();$script:MockTenant=[guid]::NewGuid().ToString()
-    $script:Db=@{};$script:Calls=@();$script:LastScopes=@()
+    $script:Db=@{};$script:Calls=@();$script:LastScopes=@();$script:RunDirect=$false
     $script:AzureGroup=$null;$script:Workspace=$null;$script:Diagnostic=$null;$script:OtherResource=$false
     Initialize-LabAutomation -TenantId $script:MockTenant -AdminId $script:Admin
     $graphId='00000003-0000-0000-c000-000000000000'
-    $script:Db['/servicePrincipals/offline-graph']=@{id='offline-graph';appId=$graphId
+    $script:Db['/servicePrincipals/offline-graph']=@{id='offline-graph';appId=$graphId;displayName='Microsoft Graph'
         oauth2PermissionScopes=@(@{id='e1fe6dd8-ba31-4d61-89e7-88639da4683d';value='User.Read';isEnabled=$true})}
     New-LabUsers -Domain 'offline.onmicrosoft.com'
     $allowed=Get-LabObject 'lab-app-allowed';$denied=Get-LabObject 'lab-app-denied'
@@ -191,6 +219,7 @@ try {
     Add-LabAppAssignment -PrincipalId $allowed.id | Out-Null
     $assignments=@(Get-LabMockCollection "/servicePrincipals/$($web.spId)/appRoleAssignedTo")
     Assert-Lab ($assignments.Count -eq 1 -and $assignments[0].principalId -eq $allowed.id -and $assignments[0].appRoleId -eq @($app.appRoles | Where-Object value -eq 'Lab.Reader')[0].id) 'Only allowed gets the Reader GUID'
+    $helperCore=Get-CoreConfiguration
     New-LabReaderGroup
     $group=Get-LabObject 'APP-ACCESS-LAB-Readers'
     $actualGroup=$script:Db["/groups/$($group.id)"]
@@ -277,6 +306,27 @@ try {
     Assert-Lab (@($script:LabState.records | Where-Object active).Count -eq 0 -and $script:Db.ContainsKey('/servicePrincipals/offline-graph')) 'Only recorded Graph objects deleted'
     Assert-Lab (-not (Test-Path Env:CLIENT_SECRET)) 'Process secret cleared'
     Write-Output 'Offline automation contracts passed (mocked Graph/Azure; no tenant requests).'
+    $inputScripts=[Console]::In.ReadToEnd()
+    if ($inputScripts) {
+        $script:RunDirect=$true
+        $codes=@($inputScripts | ConvertFrom-Json)
+        Assert-Lab ($codes.Count -eq 4) 'Direct route supplies 00, 07, 08 and 09'
+        for ($index=0;$index -lt $codes.Count;$index++) {
+            [scriptblock]::Create($codes[$index]).Invoke() | Out-Null
+            if ($index -eq 1) {
+                $nativeWeb=@(Get-LabMockCollection '/applications' | Where-Object displayName -eq 'APP-ACCESS-LAB-Web')[0]
+                Assert-Lab ($nativeWeb.appRoles.Count -eq 0 -and @(Get-LabMockCollection '/oauth2PermissionGrants').Count -eq 0) 'Direct 07 does not execute 08/09'
+                Assert-Lab ($env:CLIENT_ID -eq $nativeWeb.appId -and $env:CLIENT_SECRET -eq 'offline-secret-only') 'Direct secret/environment matches helper'
+            }
+        }
+        Assert-Lab ((Get-CoreConfiguration) -ceq $helperCore) 'Direct and helper routes reach identical core configuration (excluding random IDs/credentials)'
+        $nativeCore=$codes[1]
+        $script:MockTenant=[guid]::NewGuid().ToString()
+        Assert-LabThrows { [scriptblock]::Create($nativeCore).Invoke() } 'Wrong tenant'
+        $script:MockTenant=$originalTenant
+        if (Test-Path Env:CLIENT_SECRET) { Remove-Item Env:CLIENT_SECRET }
+        Write-Output 'Direct/helper core state parity passed (real rendered commands; mocked SDK only).'
+    }
 } finally {
     Set-Location -LiteralPath $previous
     Get-ChildItem -LiteralPath $temporary -File -Force | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force }

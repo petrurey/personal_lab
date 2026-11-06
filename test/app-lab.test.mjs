@@ -74,7 +74,7 @@ test("each module separates actionable configuration from collapsed knowledge", 
     a10: ["Add a platform &gt; Single-page application", "http://localhost:5173", "AzureADMultipleOrgs"],
     a11: ["Threat detection &gt; Create policy &gt; OAuth app policy", "APP-ACCESS-LAB-OAuth-Alert", "unchecked"],
     a12: ["App launchers &gt; New collection", "Log Analytics workspaces &gt; Create", "Add diagnostic setting", "SignInLogs", "AuditLogs"],
-    a13: ["13-set-environment.ps1", "13-run-sample.ps1", "npm ci", "HTTP 401"],
+    a13: ["13-direct-runtime.ps1", "13-helper-runtime.ps1", "npm ci", "HTTP 401"],
     a14: ["Lab Observer", "HTTP 200", "HTTP 403", "AADSTS50105", "Enable policy: Report-only"],
     a15: ["Stop provisioning", "Custom roles", "rg-app-access-lab", "Action Cleanup"]
   };
@@ -94,11 +94,12 @@ test("all authored PowerShell blocks and tenant automation parse when PowerShell
   }
   assert.equal(probe.status, 0, probe.stderr);
   const html = await read("labs/app-access-lab.html");
-  const scripts = [...html.matchAll(/<pre data-file="[^"]+\.ps1"[^>]*><code>([\s\S]*?)<\/code><\/pre>/g)]
-    .map(match => match[1].replaceAll("&gt;", ">").replaceAll("&lt;", "<").replaceAll("&amp;", "&"));
-  const command = `$scripts = [Console]::In.ReadToEnd() | ConvertFrom-Json; foreach ($script in $scripts) { $tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseInput($script,[ref]$tokens,[ref]$errors) | Out-Null; if ($errors.Count) { $errors | ForEach-Object { [Console]::Error.WriteLine($_.Message) }; exit 1 } }`;
+  const scripts = [...html.matchAll(/<pre data-file="([^"]+\.ps1)"[^>]*><code>([\s\S]*?)<\/code><\/pre>/g)]
+    .map(match => ({ file: match[1], code: match[2].replaceAll("&gt;", ">").replaceAll("&lt;", "<").replaceAll("&amp;", "&") }));
+  const command = `$scripts = [Console]::In.ReadToEnd() | ConvertFrom-Json; foreach ($script in $scripts) { $tokens=$null; $errors=$null; [System.Management.Automation.Language.Parser]::ParseInput($script.code,[ref]$tokens,[ref]$errors) | Out-Null; if ($errors.Count) { $errors | ForEach-Object { [Console]::Error.WriteLine("$($script.file):$($_.Extent.StartLineNumber): $($_.Message)") }; exit 1 } }`;
   const result = spawnSync("pwsh", ["-NoProfile", "-Command", command], { input: JSON.stringify([...scripts,
-    await read("labs/app-access-sample/tenant.ps1"), await read("labs/app-access-sample/automation.ps1")]), encoding: "utf8" });
+    { file: "tenant.ps1", code: await read("labs/app-access-sample/tenant.ps1") },
+    { file: "automation.ps1", code: await read("labs/app-access-sample/automation.ps1") }]), encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
   assert.ok(scripts.length >= 12);
 });
@@ -144,4 +145,45 @@ test("PowerShell offline contracts reproduce the portal configuration without te
   }
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   assert.match(result.stdout, /Offline automation contracts passed/);
+});
+
+test("all modules expose independent direct/helper tracks with function-free learning commands", async () => {
+  const html = await read("labs/app-access-lab.html");
+  const functions = [...(await read("labs/app-access-sample/automation.ps1")).matchAll(/^function (\S+)/gm)].map(match => match[1]);
+  const modules = [...html.matchAll(/<section class="module" id="(a\d\d)"[\s\S]*?<\/section>/g)];
+  assert.equal(modules.length, 16);
+  const names = [];
+  for (const match of modules) {
+    const [module, id] = match;
+    assert.match(module, /class="automation-grid"/, id);
+    assert.match(module, /data-track="direct"><h4>Write it step by step<\/h4>/, id);
+    assert.match(module, /data-track="helper"><h4>Use automation\.ps1<\/h4>/, id);
+    const direct = module.split('<div class="automation-track" data-track="direct">')[1]
+      .split('<div class="automation-track" data-track="helper">')[0];
+    const scripts = [...direct.matchAll(/<pre data-file="([^"]+\.ps1)"[^>]*><code>([\s\S]*?)<\/code><\/pre>/g)];
+    if (["a01", "a05", "a11"].includes(id)) assert.equal(scripts.length, 0, id);
+    else assert.ok(scripts.length, `${id} needs actual explicit commands`);
+    for (const [, name, code] of scripts) {
+      names.push(name);
+      assert.doesNotMatch(code, /^\s*function\s|\.\s+\.\\automation\.ps1|Initialize-LabAutomation/m, name);
+      for (const fn of functions) assert.ok(!code.includes(fn), `${name} calls custom ${fn}`);
+    }
+  }
+  assert.equal(names.length, new Set(names).size, "Downloads have unique filenames");
+  assert.match(await read("assets/app-lab.css"), /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(await read("assets/app-lab.css"), /@media\(max-width:1100px\)/);
+});
+
+test("rendered direct commands reach the same core configuration as the helper", async t => {
+  const html = await read("labs/app-access-lab.html");
+  const scripts = ["00-direct-users.ps1", "07-direct-register.ps1", "08-direct-core-consent.ps1", "09-direct-roles.ps1"].map(file => {
+    const code = html.match(new RegExp(`<pre data-file="${file}"[^>]*><code>([\\s\\S]*?)</code></pre>`))?.[1];
+    assert.ok(code, file);
+    return code.replaceAll("&gt;", ">").replaceAll("&lt;", "<").replaceAll("&amp;", "&");
+  });
+  const result = spawnSync("pwsh", ["-NoProfile", "-File", resolve(root, "test", "app-automation.test.ps1")],
+    { encoding: "utf8", timeout: 60_000, input: JSON.stringify(scripts) });
+  if (result.error?.code === "ENOENT") { t.skip("PowerShell 7 is unavailable."); return; }
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /Direct\/helper core state parity passed/);
 });

@@ -152,7 +152,7 @@ test("preview serves the exact original plan only at its designated route and bl
     assert.equal(head.status, 200);
     assert.equal(await head.text(), "");
     assert.deepEqual(await readFile(originalPlan), originalBytes);
-    for (const file of [".private/identity-development-plan.html", ".git/config", "package.json", "scripts/import-sources.mjs", "missing.html", "labs/app-access-sample/node_modules/openid-client/package.json", "labs/app-access-sample/app-access-lab.json", "labs/app-access-sample/.app-access-lab-state.json", "labs/app-access-sample/.app-access-lab-test.cer", "labs/app-access-sample/.env"]) {
+    for (const file of [".private/identity-development-plan.html", ".git/config", "package.json", "scripts/import-sources.mjs", "missing.html", "labs/app-access-sample/node_modules/openid-client/package.json", "labs/app-access-sample/app-access-lab.json", "labs/app-access-sample/.app-access-lab-state.json", "labs/app-access-sample/.app-access-direct-consent.json", "labs/app-access-sample/.app-access-lab-test.cer", "labs/app-access-sample/.env"]) {
       assert.equal((await fetch(`${url}/${file}`)).status, 404, file);
     }
     assert.equal(failures.length, 0);

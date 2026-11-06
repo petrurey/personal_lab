@@ -6,4 +6,5 @@ test-results/
 labs/app-access-sample/app-access-lab.json
 .env
 .app-access-lab-state.json
+.app-access-direct-consent.json
 .app-access-lab-*.cer

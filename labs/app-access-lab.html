@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="light dark">
 <meta name="description" content="Exact Entra and Azure configuration steps for application access, with separate knowledge and context.">
 <title>Microsoft Entra apps | Access implementation field lab</title>
-<link rel="stylesheet" href="../assets/app-lab.css?v=2">
+<link rel="stylesheet" href="../assets/app-lab.css?v=3">
 <script src="../assets/app-lab.js?v=2" defer></script>
 </head>
 <body>
@@ -28,8 +28,9 @@
 <p><strong>Core order:</strong> <a href="#a00">00: tenant</a> &rarr; <a href="#a07">07: registration</a> &rarr; <a href="#a08">08: Graph permission</a> &rarr; <a href="#a09">09: assignment</a> &rarr; <a href="#a13">13: run app</a> &rarr; <a href="#a14">14: compare users</a>. Run the licensed extensions before <a href="#a15">15: cleanup</a>.</p>
 <p>Use a disposable tenant. <strong>Technical configuration</strong> contains actions and checks. <strong>Knowledge &amp; context</strong> contains explanations and references, collapsed by default. If an extension's prerequisite is missing, record <strong>not run</strong>.</p>
 <p><strong>Equivalent routes:</strong> scripts write the same configuration values as the portal steps. IDs, passwords and certificate bytes are newly generated, not copied between runs. <strong>Shared steps</strong> are required for both routes. <strong>Manual-only</strong> means no complete automation alternative is offered; an inventory query is not a replacement.</p>
-<p><strong>Automation:</strong> use PowerShell 7 and initialize the session in <a href="#a00">00</a>. Choose portal <em>or</em> automation for creating the same objects; do not combine creation routes. The scripts refuse existing/unrecorded objects and save only IDs/baselines in the hidden local state file. Never commit that file, secrets or tokens.</p>
-<p><strong>Sample downloads:</strong> keep <a href="app-access-sample/package.json" download>package.json</a>, <a href="app-access-sample/package-lock.json" download>package-lock.json</a>, <a href="app-access-sample/server.mjs" download>server.mjs</a>, <a href="app-access-sample/authorization.mjs" download>authorization.mjs</a>, <a href="app-access-sample/server.test.mjs" download>tests</a> and <a href="app-access-sample/automation.ps1" download>automation.ps1</a> in one folder.</p>
+<p><strong>Two automation tracks:</strong> <strong>Write it step by step</strong> shows every native PowerShell/API command and payload, with no custom functions or helper initialization. Microsoft Graph/Azure sign-in is still required and shown explicitly. <strong>Use automation.ps1</strong> retains the shorter function calls and initialization from <a href="#a00">00</a>. Both reach the same settings and share the same vendor/manual boundaries. The columns stack on smaller screens.</p>
+<p>Choose the portal, direct commands <em>or</em> helper route for creating an object; never run multiple creation routes against it. Direct commands prompt for IDs and print <code>path/identity</code> records for you to retain locally. The helper saves its own IDs/baselines in its hidden state file. Keep the two cleanup records separate; never commit records, baselines, secrets or tokens.</p>
+<p><strong>Sample downloads:</strong> keep <a href="app-access-sample/package.json" download>package.json</a>, <a href="app-access-sample/package-lock.json" download>package-lock.json</a>, <a href="app-access-sample/server.mjs" download>server.mjs</a>, <a href="app-access-sample/authorization.mjs" download>authorization.mjs</a> and <a href="app-access-sample/server.test.mjs" download>tests</a> in one folder. Add <a href="app-access-sample/automation.ps1" download>automation.ps1</a> only for the helper track; the direct track does not load it.</p>
 <details><summary>Curriculum mapping</summary><p>Original instructions covering <a href="https://learn.microsoft.com/en-gb/training/paths/implement-access-management-for-apps/">Implement access management for apps</a>; reference check: 6 November 2026.</p><ul>
 <li><a href="https://learn.microsoft.com/en-us/training/modules/plan-design-integration-of-enterprise-apps-for-sso/">Plan and design enterprise-app SSO</a>: discovery, connectors, administration, gallery apps, OAuth policies &mdash; 01-03, 11.</li>
 <li><a href="https://learn.microsoft.com/en-us/training/modules/implement-monitor-integration-of-enterprise-apps-for-sso/">Implement and monitor SSO</a>: claims, consent, proxy, custom SaaS, provisioning, logs, collections &mdash; 03-06, 12.</li>
@@ -63,6 +64,37 @@
 <tr><td>SPA / custom API / multitenant</td><td>Separate client/API registrations; suitable application implementation. Multitenant testing requires a second disposable tenant and its consenting administrator.</td></tr>
 <tr><td>Azure log export</td><td>Azure subscription in the lab tenant, Contributor for the target resource group/workspace, Security Administrator for Entra diagnostic settings, and appropriate log-export entitlement.</td></tr>
 </tbody></table></div>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="shared" data-track="direct"><summary>Explicit commands &mdash; no helper required</summary><p>Run the blocks in order for the selected branch. All inputs, requests and payloads are explicit. Microsoft sign-in/installed cmdlets are still required. No custom functions, dot-sourcing or helper initialization is used. Keep printed <code>path/identity</code> records in local notes for cleanup, never secrets. Do not rerun creation blocks after a partial failure.</p><h5>Install the official Graph authentication module</h5><p>Prerequisite only: this installs Microsoft's cmdlets, not a lab helper.</p><pre data-file="00-direct-install.ps1" data-scope="prerequisite"><code>Install-Module Microsoft.Graph.Authentication -Scope CurrentUser</code></pre>
+<h5>Sign in, check for duplicates, and POST each user</h5><p>Enter the primary domain without @. Each password prompt is secure. Record the two returned IDs and cleanup records; complete the shared first-login/MFA steps.</p><pre data-file="00-direct-users.ps1" data-scope="core"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'User.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$Domain=Read-Host 'Lab primary domain (without @)'
+foreach ($Name in @('lab-app-allowed','lab-app-denied')) {
+    $Upn="$Name@$Domain"
+    $filter=[uri]::EscapeDataString("userPrincipalName eq '$($Upn.Replace("'","''"))'")
+    $existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/users?`$filter=$filter" -OutputType Hashtable
+    if (@($existing.value).Count) { throw "User $Upn exists; do not adopt it." }
+    $secure=Read-Host "Temporary password for $Upn" -AsSecureString
+    $password=[System.Net.NetworkCredential]::new('', $secure).Password
+    $body=@{accountEnabled=$true;displayName=$Name;mailNickname=$Name;userPrincipalName=$Upn;userType='Member'
+        passwordProfile=@{password=$password;forceChangePasswordNextSignIn=$true}}
+    $user=Invoke-MgGraphRequest -Method POST -Uri "$Graph/users" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+    @{path="/users/$($user.id)";identity=@{userPrincipalName=$Upn}} | ConvertTo-Json -Compress
+    [pscustomobject]@{UserId=$user.id;Upn=$user.userPrincipalName}
+    $password=$null
+}</code></pre></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="shared"><summary>Automation &mdash; create the same two users</summary>
 <p><strong>Result:</strong> enabled Member accounts with the two specified UPNs/display names and no new role/group assignments. <strong>Shared:</strong> tenant selection/baseline checks and each user's initial password change/MFA registration remain steps 1 and 4-7 above.</p>
 <pre data-file="00-connect.ps1"><code>Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
@@ -72,6 +104,10 @@ $AdminId = [guid](Read-Host 'Signed-in administrator USER object GUID')
 Initialize-LabAutomation -TenantId $TenantId -AdminId $AdminId
 New-LabUsers -Domain (Read-Host 'Lab primary domain, e.g. tenant.onmicrosoft.com')</code></pre>
 <p>Enter the two temporary passwords at the secure prompts; keep the same terminal and folder for later sections. Later sessions can dot-source and initialize again without recreating users.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> both ordinary member accounts can sign in; tenant ID and both user object IDs are recorded.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>The Learn path's lack of study prerequisites does not remove practical tenant/license requirements. Graph consent authorizes the tool; it does not replace the operator's Entra administrator role.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/assign-user-or-group-access-portal">Assignment prerequisites</a><a href="https://learn.microsoft.com/en-us/defender-cloud-apps/app-governance-get-started">Governance prerequisites</a></p></details>
@@ -96,8 +132,19 @@ New-LabUsers -Domain (Read-Host 'Lab primary domain, e.g. tenant.onmicrosoft.com
 <li>Open <strong>Entra ID &gt; Enterprise apps &gt; Usage &amp; insights &gt; AD FS application migration</strong>. Select the test relying party.</li>
 <li>Read its migration status and failing validation checks. Export/record its identifier, reply URL and claims that need changing before migration.</li>
 </ol>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="manual-only" data-track="direct"><summary>Manual-only boundary &mdash; same for both tracks</summary><p>Use the same portal/agent steps for the snapshot, Microsoft 365 connector consent and AD FS reporting. No complete direct or helper route is offered; an inventory query cannot replace them.</p></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="manual-only"><summary>Manual-only &mdash; no equivalent script offered for this workflow</summary>
 <p>The three procedures configure different systems: a Defender snapshot, a consented Microsoft 365 connector and AD FS/Connect Health reporting. The former Graph inventory query did none of these and has been removed. Use the portal/agent steps above. A discovery ingestion API alone would not complete connector authorization or install/report AD FS health agents.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> a discovered app, a healthy connector and/or the AD FS test relying party appears in its respective report.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>Network discovery finds app usage; Graph inventory lists directory objects. Defender connectors collect SaaS telemetry; private network connectors publish internal apps. AD FS migration reports include active relying parties from the last 30 days, not every historical app.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/defender-cloud-apps/set-up-cloud-discovery">Discovery setup</a><a href="https://learn.microsoft.com/en-us/defender-cloud-apps/connect-apps">App connectors</a><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/migrate-ad-fs-application-howto">AD FS migration</a></p></details>
@@ -115,11 +162,64 @@ New-LabUsers -Domain (Read-Host 'Lab primary domain, e.g. tenant.onmicrosoft.com
 <li>In the editor's browser profile, open that registration &gt; <strong>Certificates &amp; secrets &gt; Client secrets &gt; New client secret</strong>. Create a temporary test credential, then delete it without copying its value.</li>
 <li>Try the same credential operation on a second lab registration where the editor has no role/ownership. Confirm it is denied.</li>
 </ol>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="shared" data-track="direct"><summary>Explicit commands &mdash; no helper required</summary><p>Run the blocks in order for the selected branch. All inputs, requests and payloads are explicit. Microsoft sign-in/installed cmdlets are still required. No custom functions, dot-sourcing or helper initialization is used. Keep printed <code>path/identity</code> records in local notes for cleanup, never secrets. Do not rerun creation blocks after a partial failure.</p><h5>Create the scoped app, then assign the two directory roles</h5><p>The ordinary editor/no-ownership prerequisite and both credential-editor browser tests remain shared. Record new assignments only; an existing operator role is retained.</p><pre data-file="02-direct-admin.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','RoleManagement.ReadWrite.Directory','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$Name='APP-ACCESS-LAB-AdminScope'
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications?`$filter=displayName eq '$Name'" -OutputType Hashtable
+if (@($existing.value).Count) { throw 'This app already exists. Do not create/adopt a duplicate.' }
+$body=@{displayName=$Name;description='APP-ACCESS-LAB only. Delete after training.'
+    signInAudience='AzureADMyOrg';isFallbackPublicClient=$false
+    requiredResourceAccess=@(@{resourceAppId='00000003-0000-0000-c000-000000000000'
+        resourceAccess=@(@{id='e1fe6dd8-ba31-4d61-89e7-88639da4683d';type='Scope'})})
+    web=@{redirectUris=@('http://localhost:4300/callback');implicitGrantSettings=@{enableAccessTokenIssuance=$false;enableIdTokenIssuance=$false}}
+}
+$app=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applications" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/applications/$($app.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+$body=@{appId=$app.appId;accountEnabled=$true;appRoleAssignmentRequired=$true
+    tags=@('WindowsAzureActiveDirectoryIntegratedApp')}
+$sp=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+[pscustomobject]@{AppObjectId=$app.id;ClientId=$app.appId;SpId=$sp.id}
+
+$OperatorId=[guid](Read-Host 'Lab operator USER object GUID')
+$EditorId=[guid](Read-Host 'Ordinary editor USER object GUID')
+$definitions=Invoke-MgGraphRequest -Method GET -Uri "$Graph/roleManagement/directory/roleDefinitions?`$filter=isBuiltIn eq true and displayName eq 'Application Administrator'" -OutputType Hashtable
+if (@($definitions.value).Count -ne 1) { throw 'Cannot resolve the built-in role.' }
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/roleManagement/directory/roleAssignments?`$filter=principalId eq '$OperatorId'" -OutputType Hashtable
+if (@($existing.value | Where-Object { $_.roleDefinitionId -eq $definitions.value[0].id -and $_.directoryScopeId -eq '/' }).Count -eq 0) {
+    $body=@{principalId=$OperatorId.ToString();roleDefinitionId=$definitions.value[0].id;directoryScopeId='/'}
+    $grant=Invoke-MgGraphRequest -Method POST -Uri "$Graph/roleManagement/directory/roleAssignments" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+    @{path="/roleManagement/directory/roleAssignments/$($grant.id)";identity=@{principalId=$OperatorId.ToString();roleDefinitionId=$definitions.value[0].id}} | ConvertTo-Json -Compress
+}
+$body=@{displayName='APP-ACCESS-LAB Credential Editor';isEnabled=$true
+    rolePermissions=@(@{allowedResourceActions=@('microsoft.directory/applications/credentials/update')})}
+$role=Invoke-MgGraphRequest -Method POST -Uri "$Graph/roleManagement/directory/roleDefinitions" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/roleManagement/directory/roleDefinitions/$($role.id)";identity=@{displayName=$role.displayName}} | ConvertTo-Json -Compress
+$body=@{principalId=$EditorId.ToString();roleDefinitionId=$role.id;directoryScopeId="/$($app.id)"}
+$assignment=Invoke-MgGraphRequest -Method POST -Uri "$Graph/roleManagement/directory/roleAssignments" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/roleManagement/directory/roleAssignments/$($assignment.id)";identity=@{principalId=$EditorId.ToString();directoryScopeId=$body.directoryScopeId}} | ConvertTo-Json -Compress</code></pre></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="shared"><summary>Automation &mdash; assign both administrative roles at the same scopes</summary>
 <p><strong>Shared prerequisites:</strong> create the separate ordinary editor and ensure it has no ownership/admin role. The editor's positive/negative credential tests are the same verification steps 5-6 for either route.</p>
 <pre data-file="02-custom-role.ps1"><code>New-LabRegistration -Name 'APP-ACCESS-LAB-AdminScope' | Out-Null
 New-LabDirectoryRole -OperatorId (Read-Host 'Lab operator USER GUID') -EditorId (Read-Host 'Editor USER GUID')</code></pre>
 <p><strong>Result:</strong> Application Administrator assigned to the operator at tenant scope (unless already assigned); the enabled custom credential-update role assigned to the editor only at the AdminScope registration's object scope.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> the editor can update credentials only for the scoped disposable registration.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>A directory administration role controls who configures apps. An application role such as <code>Lab.Reader</code> controls what a signed-in app user can do. Credential-update permission can enable app impersonation; restrict it to this disposable app.</p><p>Use OIDC for modern custom apps, SAML when the SaaS supports assertions, and proxy for internal apps. Password-based SSO needs the supported browser extension; linked SSO is only a launch link.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/custom-available-permissions">Custom app permissions</a><a href="https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/manage-roles-portal">Role assignments</a><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/what-is-single-sign-on">SSO choices</a></p></details>
@@ -140,6 +240,102 @@ New-LabDirectoryRole -OperatorId (Read-Host 'Lab operator USER GUID') -EditorId 
 <li>Return to Entra &gt; <strong>Basic SAML Configuration &gt; Edit</strong>. Replace <strong>Reply URL</strong> with the generated ACS URL and <strong>Sign on URL</strong> with the generated SP Initiated Login URL; save.</li>
 <li>Select <strong>Test &gt; Test sign in</strong>. Authenticate as the allowed user; confirm the toolkit receives the assertion. Repeat in the denied user's profile and confirm Entra blocks the unassigned account.</li>
 </ol>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="shared" data-track="direct"><summary>Explicit commands &mdash; no helper required</summary><p>Run the blocks in order for the selected branch. All inputs, requests and payloads are explicit. Microsoft sign-in/installed cmdlets are still required. No custom functions, dot-sourcing or helper initialization is used. Keep printed <code>path/identity</code> records in local notes for cleanup, never secrets. Do not rerun creation blocks after a partial failure.</p><h5>Instantiate the gallery template and configure SAML/assignment</h5><p>Import the returned trust/certificate and register the allowed account in the toolkit using the same shared vendor steps. Retain the generated Entity ID.</p><pre data-file="03-direct-saml.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','AppRoleAssignment.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$Name='APP-ACCESS-LAB-SAML'
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications?`$filter=displayName eq '$Name'" -OutputType Hashtable
+if (@($existing.value).Count) { throw 'App exists; do not create/adopt a duplicate.' }
+$templates=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applicationTemplates?`$filter=displayName eq 'Microsoft Entra SAML Toolkit'" -OutputType Hashtable
+if (@($templates.value).Count -ne 1) { throw 'Resolve exactly one template.' }
+$created=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applicationTemplates/$($templates.value[0].id)/instantiate" -Body (@{displayName=$Name} | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+$app=$created.application
+$sp=$created.servicePrincipal
+@{path="/applications/$($app.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+@{path="/servicePrincipals/$($sp.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+$ReplyUrl='https://samltoolkit.azurewebsites.net/SAML/Consume'
+$SignOnUrl='https://samltoolkit.azurewebsites.net/'
+$body=@{web=@{redirectUris=@($ReplyUrl)}}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$($app.id)" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$body=@{preferredSingleSignOnMode='saml';loginUrl=$SignOnUrl;replyUrls=@($ReplyUrl);appRoleAssignmentRequired=$true;accountEnabled=$true}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/servicePrincipals/$($sp.id)" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$signing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)?`$select=id,preferredTokenSigningKeyThumbprint,keyCredentials" -OutputType Hashtable
+if (-not $signing['preferredTokenSigningKeyThumbprint']) {
+    $body=@{displayName="CN=$($app.displayName)";endDateTime=[datetime]::UtcNow.AddYears(3).ToString('o')}
+    $certificate=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals/$($sp.id)/addTokenSigningCertificate" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+    Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/servicePrincipals/$($sp.id)" -Body (@{preferredTokenSigningKeyThumbprint=$certificate.thumbprint} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+    $encoded=$certificate.key
+} else {
+    $keys=@($signing.keyCredentials | Where-Object {
+        $_.usage -eq 'Verify' -and $_.customKeyIdentifier -and
+        ([BitConverter]::ToString([Convert]::FromBase64String($_.customKeyIdentifier))).Replace('-','') -eq $signing.preferredTokenSigningKeyThumbprint
+    })
+    if ($keys.Count -ne 1 -or -not $keys[0].key) { throw 'Cannot export the active certificate.' }
+    $encoded=$keys[0].key
+}
+$CertificateFile=Join-Path $PWD ".app-access-lab-$($app.displayName).cer"
+[IO.File]::WriteAllBytes($CertificateFile,[Convert]::FromBase64String($encoded))
+[pscustomobject]@{LoginUrl="https://login.microsoftonline.com/$TenantId/saml2"
+    EntraIdentifier="https://sts.windows.net/$TenantId/";LogoutUrl="https://login.microsoftonline.com/$TenantId/saml2";CertificateFile=$CertificateFile}
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)" -OutputType Hashtable
+$userRoles=@($sp['appRoles'] | Where-Object { $null -ne $_ -and $_.isEnabled -and $_.allowedMemberTypes -contains 'User' })
+if ($userRoles.Count -gt 1) { throw 'Select an explicit role; do not guess.' }
+$RoleId=if ($userRoles.Count) { $userRoles[0].id } else { [guid]::Empty.ToString() }
+$AllowedId=[guid](Read-Host 'Allowed USER object GUID')
+$body=@{principalId=$AllowedId.ToString();resourceId=$sp.id;appRoleId=$RoleId}
+$assignment=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)/appRoleAssignedTo/$($assignment.id)";identity=@{principalId=$AllowedId.ToString();appRoleId=$RoleId}} | ConvertTo-Json -Compress</code></pre>
+<h5>Write the toolkit-generated final URLs</h5><p>Run after the shared vendor configuration. Repeat the same two-user sign-in verification.</p><pre data-file="03-direct-final-urls.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$AppObjectId=[guid](Read-Host 'APP-ACCESS-LAB-SAML registration OBJECT GUID')
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+if ($app.displayName -ne 'APP-ACCESS-LAB-SAML') { throw 'Wrong registration.' }
+$SpId=[guid](Read-Host 'APP-ACCESS-LAB-SAML enterprise app SP GUID')
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$SpId" -OutputType Hashtable
+if ($sp.appId -ne $app.appId) { throw 'SP does not match this registration.' }
+$ReplyUrl=(Read-Host 'Toolkit-generated ACS URL')
+$SignOnUrl=(Read-Host 'Toolkit-generated SP Initiated Login URL')
+$body=@{web=@{redirectUris=@($ReplyUrl)}}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$($app.id)" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$body=@{preferredSingleSignOnMode='saml';loginUrl=$SignOnUrl;replyUrls=@($ReplyUrl);appRoleAssignmentRequired=$true;accountEnabled=$true}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/servicePrincipals/$($sp.id)" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$signing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)?`$select=id,preferredTokenSigningKeyThumbprint,keyCredentials" -OutputType Hashtable
+if (-not $signing['preferredTokenSigningKeyThumbprint']) {
+    $body=@{displayName="CN=$($app.displayName)";endDateTime=[datetime]::UtcNow.AddYears(3).ToString('o')}
+    $certificate=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals/$($sp.id)/addTokenSigningCertificate" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+    Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/servicePrincipals/$($sp.id)" -Body (@{preferredTokenSigningKeyThumbprint=$certificate.thumbprint} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+    $encoded=$certificate.key
+} else {
+    $keys=@($signing.keyCredentials | Where-Object {
+        $_.usage -eq 'Verify' -and $_.customKeyIdentifier -and
+        ([BitConverter]::ToString([Convert]::FromBase64String($_.customKeyIdentifier))).Replace('-','') -eq $signing.preferredTokenSigningKeyThumbprint
+    })
+    if ($keys.Count -ne 1 -or -not $keys[0].key) { throw 'Cannot export the active certificate.' }
+    $encoded=$keys[0].key
+}
+$CertificateFile=Join-Path $PWD ".app-access-lab-$($app.displayName).cer"
+[IO.File]::WriteAllBytes($CertificateFile,[Convert]::FromBase64String($encoded))
+[pscustomobject]@{LoginUrl="https://login.microsoftonline.com/$TenantId/saml2"
+    EntraIdentifier="https://sts.windows.net/$TenantId/";LogoutUrl="https://login.microsoftonline.com/$TenantId/saml2";CertificateFile=$CertificateFile}</code></pre></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="shared"><summary>Hybrid route &mdash; automate Entra configuration, share toolkit registration/trust</summary>
 <pre data-file="03-gallery.ps1"><code>New-LabTemplateApp -Name 'APP-ACCESS-LAB-SAML' -TemplateName 'Microsoft Entra SAML Toolkit' | Out-Null
 Set-LabSaml -Name 'APP-ACCESS-LAB-SAML' -ReplyUrl 'https://samltoolkit.azurewebsites.net/SAML/Consume' -SignOnUrl 'https://samltoolkit.azurewebsites.net/'
@@ -147,6 +343,10 @@ Add-LabDefaultAssignment -Name 'APP-ACCESS-LAB-SAML' -PrincipalId (Get-LabObject
 <p><strong>Shared steps 7-8:</strong> register the allowed user's toolkit account and create its vendor-side SAML configuration using the returned login/issuer/logout values and raw certificate file. The toolkit has no supported management API used by this lab.</p>
 <pre data-file="03-final-saml-urls.ps1"><code>Set-LabSaml -Name 'APP-ACCESS-LAB-SAML' -ReplyUrl (Read-Host 'Toolkit-generated ACS URL') -SignOnUrl (Read-Host 'Toolkit-generated SP Initiated Login URL')</code></pre>
 <p><strong>Result after the shared steps:</strong> same gallery app, final ACS/Sign-on URLs, SAML mode/trust, active certificate, required assignment and allowed-only access. Run the same two-user test in step 10.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> allowed reaches the SAML test app; denied fails the assignment gate.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>The enterprise app issues an assertion; the SaaS must trust the signing certificate and match the NameID to its local account. SSO and local password login are separate paths. Certificate renewal must update the SaaS trust before expiry.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/add-application-portal-setup-sso">Toolkit configuration</a><a href="https://learn.microsoft.com/en-us/graph/api/applicationtemplate-instantiate?view=graph-rest-1.0">Template API</a></p></details>
@@ -187,6 +387,167 @@ Add-LabDefaultAssignment -Name 'APP-ACCESS-LAB-SAML' -PrincipalId (Get-LabObject
 <li>In Entra, open the proxy app &gt; <strong>Single sign-on &gt; Integrated Windows authentication</strong>. Enter that exact SPN as <strong>Internal Application SPN</strong>; select <strong>On-premises user principal name</strong> as <strong>Delegated Login Identity</strong>; save.</li>
 <li>Remove the earlier cloud-user assignment and assign only the allowed synced account. Open the external URL and confirm backend SSO occurs without a second password prompt; repeat with the unassigned synced account.</li>
 </ol>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="shared" data-track="direct"><summary>Explicit commands &mdash; no helper required</summary><p>Run the blocks in order for the selected branch. All inputs, requests and payloads are explicit. Microsoft sign-in/installed cmdlets are still required. No custom functions, dot-sourcing or helper initialization is used. Keep printed <code>path/identity</code> records in local notes for cleanup, never secrets. Do not rerun creation blocks after a partial failure.</p><h5>Configure the non-gallery SAML app</h5><p>Vendor-specific NameID/claims, SaaS account mapping and vendor trust import remain the same shared steps.</p><pre data-file="04-direct-custom-saml.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','AppRoleAssignment.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$Name='APP-ACCESS-LAB-CustomSAML'
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications?`$filter=displayName eq '$Name'" -OutputType Hashtable
+if (@($existing.value).Count) { throw 'App exists; do not create/adopt a duplicate.' }
+$templates=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applicationTemplates?`$filter=displayName eq 'Custom'" -OutputType Hashtable
+if (@($templates.value).Count -ne 1) { throw 'Resolve exactly one template.' }
+$created=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applicationTemplates/$($templates.value[0].id)/instantiate" -Body (@{displayName=$Name} | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+$app=$created.application
+$sp=$created.servicePrincipal
+@{path="/applications/$($app.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+@{path="/servicePrincipals/$($sp.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+$ReplyUrl=(Read-Host 'Vendor ACS URL')
+$SignOnUrl=(Read-Host 'Vendor sign-on URL')
+$body=@{web=@{redirectUris=@($ReplyUrl)}}
+$body.identifierUris=@((Read-Host 'Vendor Entity ID'))
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$($app.id)" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$body=@{preferredSingleSignOnMode='saml';loginUrl=$SignOnUrl;replyUrls=@($ReplyUrl);appRoleAssignmentRequired=$true;accountEnabled=$true}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/servicePrincipals/$($sp.id)" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$signing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)?`$select=id,preferredTokenSigningKeyThumbprint,keyCredentials" -OutputType Hashtable
+if (-not $signing['preferredTokenSigningKeyThumbprint']) {
+    $body=@{displayName="CN=$($app.displayName)";endDateTime=[datetime]::UtcNow.AddYears(3).ToString('o')}
+    $certificate=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals/$($sp.id)/addTokenSigningCertificate" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+    Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/servicePrincipals/$($sp.id)" -Body (@{preferredTokenSigningKeyThumbprint=$certificate.thumbprint} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+    $encoded=$certificate.key
+} else {
+    $keys=@($signing.keyCredentials | Where-Object {
+        $_.usage -eq 'Verify' -and $_.customKeyIdentifier -and
+        ([BitConverter]::ToString([Convert]::FromBase64String($_.customKeyIdentifier))).Replace('-','') -eq $signing.preferredTokenSigningKeyThumbprint
+    })
+    if ($keys.Count -ne 1 -or -not $keys[0].key) { throw 'Cannot export the active certificate.' }
+    $encoded=$keys[0].key
+}
+$CertificateFile=Join-Path $PWD ".app-access-lab-$($app.displayName).cer"
+[IO.File]::WriteAllBytes($CertificateFile,[Convert]::FromBase64String($encoded))
+[pscustomobject]@{LoginUrl="https://login.microsoftonline.com/$TenantId/saml2"
+    EntraIdentifier="https://sts.windows.net/$TenantId/";LogoutUrl="https://login.microsoftonline.com/$TenantId/saml2";CertificateFile=$CertificateFile}
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)" -OutputType Hashtable
+$userRoles=@($sp['appRoles'] | Where-Object { $null -ne $_ -and $_.isEnabled -and $_.allowedMemberTypes -contains 'User' })
+if ($userRoles.Count -gt 1) { throw 'Select an explicit role; do not guess.' }
+$RoleId=if ($userRoles.Count) { $userRoles[0].id } else { [guid]::Empty.ToString() }
+$AllowedId=[guid](Read-Host 'Allowed USER object GUID')
+$body=@{principalId=$AllowedId.ToString();resourceId=$sp.id;appRoleId=$RoleId}
+$assignment=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)/appRoleAssignedTo/$($assignment.id)";identity=@{principalId=$AllowedId.ToString();appRoleId=$RoleId}} | ConvertTo-Json -Compress</code></pre>
+<h5>Create the group, attach the lab connector, publish and assign</h5><p>First install/register only the new lab connector and verify host reachability. Use the exact internal/external URLs from the portal field table. The connector-group record is for shared infrastructure cleanup, not v1.0 Graph deletion.</p><pre data-file="04-direct-proxy.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Directory.ReadWrite.All','Application.ReadWrite.All','DelegatedPermissionGrant.ReadWrite.All','AppRoleAssignment.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$Name='APP-ACCESS-LAB-Proxy'
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications?`$filter=displayName eq '$Name'" -OutputType Hashtable
+if (@($existing.value).Count) { throw 'App exists; do not create/adopt a duplicate.' }
+$templates=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applicationTemplates?`$filter=displayName eq 'Custom'" -OutputType Hashtable
+if (@($templates.value).Count -ne 1) { throw 'Resolve exactly one template.' }
+$created=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applicationTemplates/$($templates.value[0].id)/instantiate" -Body (@{displayName=$Name} | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+$app=$created.application
+$sp=$created.servicePrincipal
+@{path="/applications/$($app.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+@{path="/servicePrincipals/$($sp.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+$ConnectorId=[guid](Read-Host 'NEW lab connector GUID')
+$InternalUrl=Read-Host 'Exact internal test URL'
+$ExternalUrl=Read-Host 'Same lab-only msappproxy.net external URL'
+$Beta='https://graph.microsoft.com/beta'
+$group=Invoke-MgGraphRequest -Method POST -Uri "$Beta/onPremisesPublishingProfiles/applicationProxy/connectorGroups" -Body (@{name='APP-ACCESS-LAB-Connectors'} | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+[pscustomobject]@{ConnectorGroupId=$group.id;ConnectorId=$ConnectorId}
+Invoke-MgGraphRequest -Method POST -Uri "$Beta/onPremisesPublishingProfiles/applicationProxy/connectors/$ConnectorId/memberOf/`$ref" -Body (@{'@odata.id'="$Beta/onPremisesPublishingProfiles/applicationProxy/connectorGroups/$($group.id)"} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$($app.id)" -Body (@{identifierUris=@($ExternalUrl);web=@{redirectUris=@($ExternalUrl)}} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$body=@{onPremisesPublishing=@{internalUrl=$InternalUrl;externalUrl=$ExternalUrl;externalAuthenticationType='aadPreAuthentication';isOnPremPublishingEnabled=$true}}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Beta/applications/$($app.id)" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+Invoke-MgGraphRequest -Method PUT -Uri "$Beta/applications/$($app.id)/connectorGroup/`$ref" -Body (@{'@odata.id'="$Beta/onPremisesPublishingProfiles/applicationProxy/connectorGroups/$($group.id)"} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/servicePrincipals/$($sp.id)" -Body (@{accountEnabled=$true;appRoleAssignmentRequired=$true} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$ResourceClientId='00000003-0000-0000-c000-000000000000'
+$Scope='User.Read'
+$resources=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals?`$filter=appId eq '$ResourceClientId'" -OutputType Hashtable
+if (@($resources.value).Count -ne 1) { throw 'Expected one resource SP.' }
+$resource=$resources.value[0]
+$permissions=@($resource['oauth2PermissionScopes'] | Where-Object { $null -ne $_ -and $_.value -eq $Scope -and $_.isEnabled })
+if ($permissions.Count -ne 1) { throw 'Scope missing/not propagated; inspect before retrying.' }
+$AppObjectId=$app.id
+$SpId=$sp.id
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+$access=@($app['requiredResourceAccess'] | Where-Object { $null -ne $_ -and $_.resourceAppId -ne $ResourceClientId })
+$current=@($app['requiredResourceAccess'] | Where-Object { $null -ne $_ -and $_.resourceAppId -eq $ResourceClientId })
+if ($current.Count -gt 1) { throw 'Ambiguous resource permissions.' }
+$requested=if ($current.Count) { @($current[0].resourceAccess) } else { @() }
+if (@($requested | Where-Object { $_.id -eq $permissions[0].id -and $_.type -eq 'Scope' }).Count -eq 0) {
+    $requested+=@{id=$permissions[0].id;type='Scope'}
+}
+$access+=@{resourceAppId=$ResourceClientId;resourceAccess=$requested}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$AppObjectId" -Body (@{requiredResourceAccess=$access} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$grants=Invoke-MgGraphRequest -Method GET -Uri "$Graph/oauth2PermissionGrants?`$filter=clientId eq '$SpId'" -OutputType Hashtable
+$matching=@($grants.value | Where-Object { $_.resourceId -eq $resource.id -and $_.consentType -eq 'AllPrincipals' })
+if ($matching.Count -gt 1) { throw 'Ambiguous admin grant.' }
+if ($matching.Count -eq 0) {
+    $body=@{clientId=$SpId.ToString();resourceId=$resource.id;consentType='AllPrincipals';scope=$Scope}
+    $grant=Invoke-MgGraphRequest -Method POST -Uri "$Graph/oauth2PermissionGrants" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+    @{path="/oauth2PermissionGrants/$($grant.id)";identity=@{clientId=$SpId.ToString();resourceId=$resource.id}} | ConvertTo-Json -Compress
+} else {
+    $names=@($matching[0].scope -split ' ' | Where-Object { $_ })
+    if ($names -notcontains $Scope) { $names+=$Scope }
+    Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/oauth2PermissionGrants/$($matching[0].id)" -Body (@{scope=($names -join ' ')} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+}
+
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)" -OutputType Hashtable
+$userRoles=@($sp['appRoles'] | Where-Object { $null -ne $_ -and $_.isEnabled -and $_.allowedMemberTypes -contains 'User' })
+if ($userRoles.Count -gt 1) { throw 'Select an explicit role; do not guess.' }
+$RoleId=if ($userRoles.Count) { $userRoles[0].id } else { [guid]::Empty.ToString() }
+$AllowedId=[guid](Read-Host 'Allowed USER object GUID')
+$body=@{principalId=$AllowedId.ToString();resourceId=$sp.id;appRoleId=$RoleId}
+$assignment=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)/appRoleAssignedTo/$($assignment.id)";identity=@{principalId=$AllowedId.ToString();appRoleId=$RoleId}} | ConvertTo-Json -Compress</code></pre>
+<h5>Set KCD's SPN/identity and replace the cloud-user assignment</h5><p>Complete the shared AD/host steps 1-3 first. Copy the previous cloud assignment's recorded ID; after deleting it, remove that record from your cleanup list. Test backend SSO with the synced users.</p><pre data-file="04-direct-kcd.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Directory.ReadWrite.All','Application.ReadWrite.All','AppRoleAssignment.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$AppObjectId=[guid](Read-Host 'APP-ACCESS-LAB-Proxy registration OBJECT GUID')
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+if ($app.displayName -ne 'APP-ACCESS-LAB-Proxy') { throw 'Wrong registration.' }
+$SpId=[guid](Read-Host 'APP-ACCESS-LAB-Proxy enterprise app SP GUID')
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$SpId" -OutputType Hashtable
+if ($sp.appId -ne $app.appId) { throw 'SP does not match this registration.' }
+$Spn=Read-Host 'Exact registered HTTP SPN'
+$body=@{onPremisesPublishing=@{singleSignOnSettings=@{singleSignOnMode='onPremisesKerberos'
+    kerberosSignOnSettings=@{kerberosServicePrincipalName=$Spn;kerberosSignOnMappingAttributeType='onPremisesUserPrincipalName'}}}}
+Invoke-MgGraphRequest -Method PATCH -Uri "https://graph.microsoft.com/beta/applications/$($app.id)" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$OldAssignmentId=Read-Host 'Recorded cloud-user app-role assignment ID'
+$CloudUserId=[guid](Read-Host 'Previously assigned cloud USER GUID')
+$old=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo/$OldAssignmentId" -OutputType Hashtable
+if ($old.principalId -ne $CloudUserId.ToString()) { throw 'Wrong assignment.' }
+Invoke-MgGraphRequest -Method DELETE -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo/$OldAssignmentId" | Out-Null
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)" -OutputType Hashtable
+$userRoles=@($sp['appRoles'] | Where-Object { $null -ne $_ -and $_.isEnabled -and $_.allowedMemberTypes -contains 'User' })
+if ($userRoles.Count -gt 1) { throw 'Select an explicit role; do not guess.' }
+$RoleId=if ($userRoles.Count) { $userRoles[0].id } else { [guid]::Empty.ToString() }
+$AllowedId=[guid](Read-Host 'Allowed AD-synced USER object GUID')
+$body=@{principalId=$AllowedId.ToString();resourceId=$sp.id;appRoleId=$RoleId}
+$assignment=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)/appRoleAssignedTo/$($assignment.id)";identity=@{principalId=$AllowedId.ToString();appRoleId=$RoleId}} | ConvertTo-Json -Compress</code></pre></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="shared"><summary>Hybrid route &mdash; configure custom SAML and proxy publication</summary>
 <h4>Custom SAML</h4><pre data-file="04-custom-saml.ps1"><code>New-LabTemplateApp -Name 'APP-ACCESS-LAB-CustomSAML' -TemplateName 'Custom' | Out-Null
 Set-LabSaml -Name 'APP-ACCESS-LAB-CustomSAML' -EntityId (Read-Host 'Vendor Entity ID') -ReplyUrl (Read-Host 'Vendor ACS URL') -SignOnUrl (Read-Host 'Vendor sign-on URL')
@@ -200,6 +561,10 @@ Add-LabDefaultAssignment -Name 'APP-ACCESS-LAB-CustomSAML' -PrincipalId (Get-Lab
 Remove-LabAssignment -Name 'APP-ACCESS-LAB-Proxy' -PrincipalId (Get-LabObject 'lab-app-allowed').id
 Add-LabDefaultAssignment -Name 'APP-ACCESS-LAB-Proxy' -PrincipalId (Read-Host 'Allowed AD-synced USER GUID')</code></pre>
 <p>Result: Integrated Windows authentication with that SPN and <strong>On-premises user principal name</strong>, with only the synced allowed user assigned. The backend SSO/two-user test is shared.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> test the actual external page, not just connector health; for KCD also confirm backend SSO.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>Proxy publication, Entra preauthentication and backend authorization are separate controls. Passthrough does not impose the Entra sign-in gate. New proxy apps require explicit User.Read consent since 30 June 2026.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/app-proxy/application-proxy-add-on-premises-application">Proxy prerequisites</a><a href="https://learn.microsoft.com/en-us/entra/identity/app-proxy/how-to-configure-sso-with-kcd">KCD configuration</a></p></details>
@@ -219,8 +584,19 @@ Add-LabDefaultAssignment -Name 'APP-ACCESS-LAB-Proxy' -PrincipalId (Read-Host 'A
 <li>Return to provisioning &gt; <strong>Start provisioning</strong>. In Entra, change allowed's display name; use provision on demand again and verify the mapped target update.</li>
 <li>Remove allowed's enterprise-app assignment. Let the recurring job process the change; inspect <strong>Provisioning logs</strong> and confirm the target account's supported disable/deprovision action. Confirm denied was never provisioned by this job.</li>
 </ol>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="manual-only" data-track="direct"><summary>Manual-only boundary &mdash; same for both tracks</summary><p>Use the connector-specific credentials, mappings, assigned-only scope, notifications and lifecycle steps above. No unverified generic SCIM payload is substituted in either track.</p></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="manual-only"><summary>Manual-only &mdash; no complete connector-specific script provided</summary>
 <p>Use the numbered route above. The removed job-list query did not configure credentials, mappings, assigned-only scope, notification address, assignments or lifecycle changes. The <a href="https://learn.microsoft.com/en-us/entra/identity/app-provisioning/application-provisioning-configuration-api">supported synchronization configuration API</a> can automate connector-specific jobs, but this lab does not supply a verified payload for your vendor/schema and all those settings. Do not treat job creation/start alone as an equivalent route.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> create, update and unassignment effects in both provisioning logs and the target account.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>Provisioning creates/updates target accounts; SSO authenticates users. Removing assignment does not guarantee immediate target deletion: connector mappings, sync timing and vendor behavior determine disable/deprovision results.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/app-provisioning/configure-automatic-user-provisioning-portal">Provisioning settings</a><a href="https://learn.microsoft.com/en-us/entra/identity/app-provisioning/use-scim-to-provision-users-and-groups">SCIM</a><a href="https://learn.microsoft.com/en-us/graph/api/resources/synchronization-overview?view=graph-rest-1.0">Synchronization API</a></p></details>
@@ -246,6 +622,117 @@ Add-LabDefaultAssignment -Name 'APP-ACCESS-LAB-Proxy' -PrincipalId (Read-Host 'A
 <li>As the designated reviewer, open <strong>Enterprise apps &gt; Admin consent requests &gt; My Pending</strong>, select the request, review permissions and approve only this lab client's User.Read request.</li>
 <li>Retry sign-in. Consent should now complete; <code>/protected</code> returns 403 because this consent-only client has no Reader assignment. Stop it, restore the core client's environment, and restore the recorded user-consent/workflow settings.</li>
 </ol>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="shared" data-track="direct"><summary>Explicit commands &mdash; no helper required</summary><p>Run the blocks in order for the selected branch. All inputs, requests and payloads are explicit. Microsoft sign-in/installed cmdlets are still required. No custom functions, dot-sourcing or helper initialization is used. Keep printed <code>path/identity</code> records in local notes for cleanup, never secrets. Do not rerun creation blocks after a partial failure.</p><h5>Add ID-token email without removing other optional claims</h5><p>Inspect the resulting token through the shared local test; no additional Graph email permission is added.</p><pre data-file="06-direct-email.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$AppObjectId=[guid](Read-Host 'Web registration OBJECT GUID')
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+if ($app.displayName -ne 'APP-ACCESS-LAB-Web') { throw 'Wrong registration.' }
+$SpId=[guid](Read-Host 'Web enterprise app SP GUID')
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$SpId" -OutputType Hashtable
+if ($sp.appId -ne $app.appId) { throw 'SP does not match this registration.' }
+$optional=if ($app['optionalClaims']) { $app['optionalClaims'] } else { @{} }
+$idClaims=@($optional['idToken'] | Where-Object { $null -ne $_ })
+if (@($idClaims | ForEach-Object { $_.name }) -notcontains 'email') {
+    $optional.idToken=$idClaims+@(@{name='email';essential=$false})
+}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$($app.id)" -Body (@{optionalClaims=$optional} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null</code></pre>
+<h5>Create and attach the SAML display-name mapping policy</h5><p>Only run after completing section 03. Inspect the received claim in the toolkit.</p><pre data-file="06-direct-saml-claim.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','Policy.ReadWrite.ApplicationConfiguration','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$AppObjectId=[guid](Read-Host 'APP-ACCESS-LAB-SAML registration OBJECT GUID')
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+if ($app.displayName -ne 'APP-ACCESS-LAB-SAML') { throw 'Wrong registration.' }
+$SpId=[guid](Read-Host 'APP-ACCESS-LAB-SAML enterprise app SP GUID')
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$SpId" -OutputType Hashtable
+if ($sp.appId -ne $app.appId) { throw 'SP does not match this registration.' }
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)/claimsMappingPolicies" -OutputType Hashtable
+if (@($existing.value).Count) { throw 'Do not replace an existing claims policy.' }
+$definition=@{ClaimsMappingPolicy=@{Version=1;IncludeBasicClaimSet='true';ClaimsSchema=@(
+    @{Source='user';ID='userprincipalname';SamlClaimType='http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'},
+    @{Source='user';ID='displayname';SamlClaimType='lab_display_name'}
+)}}
+$body=@{displayName='APP-ACCESS-LAB-SAML-Claims';definition=@($definition | ConvertTo-Json -Depth 10);isOrganizationDefault=$false}
+$policy=Invoke-MgGraphRequest -Method POST -Uri "$Graph/policies/claimsMappingPolicies" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/policies/claimsMappingPolicies/$($policy.id)";identity=@{displayName=$policy.displayName}} | ConvertTo-Json -Compress
+Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals/$($sp.id)/claimsMappingPolicies/`$ref" -Body (@{'@odata.id'="$Graph/policies/claimsMappingPolicies/$($policy.id)"} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null</code></pre>
+<h5>Save the baseline, write policy settings, and create the request client</h5><p>This JSON backup is an explicit undo operation, not helper initialization. Complete the shared browser request/reviewer approval; do not grant consent directly.</p><pre data-file="06-direct-consent.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','Policy.ReadWrite.Authorization','Policy.ReadWrite.ConsentRequest','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+if (Test-Path -LiteralPath '.app-access-direct-consent.json') { throw 'Baseline already exists; restore/inspect it first.' }
+$authorization=Invoke-MgGraphRequest -Method GET -Uri "$Graph/policies/authorizationPolicy" -OutputType Hashtable
+$workflow=Invoke-MgGraphRequest -Method GET -Uri "$Graph/policies/adminConsentRequestPolicy" -OutputType Hashtable
+@{tenantId=$TenantId.ToString();adminId=$AdminId.ToString();authorization=$authorization;workflow=$workflow} |
+    ConvertTo-Json -Depth 30 | Set-Content -LiteralPath '.app-access-direct-consent.json' -Encoding utf8
+$policies=@($authorization.permissionGrantPolicyIdsAssignedToDefaultUserRole | Where-Object { $_ -notlike 'managePermissionGrantsForSelf.*' })
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/policies/authorizationPolicy" -Body (@{permissionGrantPolicyIdsAssignedToDefaultUserRole=$policies} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$ReviewerId=[guid](Read-Host 'Consenting reviewer USER object GUID')
+$body=@{isEnabled=$true;notifyReviewers=$true;remindersEnabled=$true;requestDurationInDays=7
+    reviewers=@(@{query="/users/$ReviewerId";queryType='MicrosoftGraph'})}
+Invoke-MgGraphRequest -Method PUT -Uri "$Graph/policies/adminConsentRequestPolicy" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$Name='APP-ACCESS-LAB-Consent'
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications?`$filter=displayName eq '$Name'" -OutputType Hashtable
+if (@($existing.value).Count) { throw 'This app already exists. Do not create/adopt a duplicate.' }
+$body=@{displayName=$Name;description='APP-ACCESS-LAB only. Delete after training.'
+    signInAudience='AzureADMyOrg';isFallbackPublicClient=$false
+    requiredResourceAccess=@(@{resourceAppId='00000003-0000-0000-c000-000000000000'
+        resourceAccess=@(@{id='e1fe6dd8-ba31-4d61-89e7-88639da4683d';type='Scope'})})
+    web=@{redirectUris=@('http://localhost:4300/callback');implicitGrantSettings=@{enableAccessTokenIssuance=$false;enableIdTokenIssuance=$false}}
+}
+$app=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applications" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/applications/$($app.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+$body=@{appId=$app.appId;accountEnabled=$true;appRoleAssignmentRequired=$false
+    tags=@('WindowsAzureActiveDirectoryIntegratedApp')}
+$sp=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+[pscustomobject]@{AppObjectId=$app.id;ClientId=$app.appId;SpId=$sp.id}
+$body=@{passwordCredential=@{displayName='APP-ACCESS-LAB temporary';endDateTime=[datetime]::UtcNow.AddDays(1).ToString('o')}}
+$credential=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applications/$($app.id)/addPassword" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+$env:TENANT_ID=$TenantId.ToString()
+$env:CLIENT_ID=$app.appId
+$env:CLIENT_SECRET=$credential.secretText
+Write-Host 'One-day secret set in process memory only; do not print or record its value.'
+Write-Host 'Stop/restart the sample with this client; submit and approve the actual browser request.'</code></pre>
+<h5>Restore the captured consent baseline</h5><p>After the browser test, restore these tenant settings and use section 13's direct environment block with the core IDs/secret.</p><pre data-file="06-direct-restore.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Policy.ReadWrite.Authorization','Policy.ReadWrite.ConsentRequest','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$baseline=Get-Content -LiteralPath '.app-access-direct-consent.json' -Raw | ConvertFrom-Json -AsHashtable
+if ($baseline.tenantId -ne $TenantId.ToString() -or $baseline.adminId -ne $AdminId.ToString()) { throw 'Wrong baseline identity.' }
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/policies/authorizationPolicy" -Body (@{permissionGrantPolicyIdsAssignedToDefaultUserRole=$baseline.authorization.permissionGrantPolicyIdsAssignedToDefaultUserRole} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$body=@{}
+foreach ($key in @('isEnabled','notifyReviewers','remindersEnabled','requestDurationInDays','reviewers')) { $body[$key]=$baseline.workflow[$key] }
+Invoke-MgGraphRequest -Method PUT -Uri "$Graph/policies/adminConsentRequestPolicy" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+Remove-Item -LiteralPath '.app-access-direct-consent.json' -Force</code></pre></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="shared"><summary>Hybrid route &mdash; configure both claims and the complete consent test client/workflow</summary>
 <pre data-file="06-claims-and-workflow.ps1"><code>Set-LabEmailClaim
 # Only if section 03's SAML extension was completed:
@@ -259,6 +746,10 @@ Use-LabClient -Name 'APP-ACCESS-LAB-Consent'</code></pre>
 <pre data-file="06-restore.ps1"><code>Restore-LabConsentWorkflow
 Use-LabClient</code></pre>
 <p>These restore the captured tenant consent settings and core process environment. Restart the core sample afterward. Reviewer selection does not grant consent privileges.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> the configured claim appears where applicable; an actual consent request is approved and retry succeeds.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>Claims describe the identity/token contract. Consent grants API permissions; it does not assign users to an app. An ID token is for the client login; an API access token is for its own audience. Reviewer designation does not elevate administrator privileges.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity-platform/optional-claims">Optional claims</a><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-user-consent">User consent</a><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-admin-consent-workflow">Consent workflow</a></p></details>
@@ -281,10 +772,51 @@ Use-LabClient</code></pre>
 <li>In that enterprise app &gt; <strong>Properties</strong>, set <strong>Enabled for users to sign-in: Yes</strong>, <strong>Assignment required: Yes</strong> and <strong>Visible to users: Yes</strong>; save.</li>
 <li>Continue to <a href="#a08">08</a> for Graph consent and <a href="#a09">09</a> for roles/assignment before signing in.</li>
 </ol>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="complete" data-track="direct"><summary>Explicit commands &mdash; no helper required</summary><p>Run the blocks in order for the selected branch. All inputs, requests and payloads are explicit. Microsoft sign-in/installed cmdlets are still required. No custom functions, dot-sourcing or helper initialization is used. Keep printed <code>path/identity</code> records in local notes for cleanup, never secrets. Do not rerun creation blocks after a partial failure.</p><h5>POST the registration/SP, then add the one-day secret</h5><p>This performs section 07 only: the default User.Read request, but no grant, roles or user assignments. IDs/records are printed without the secret.</p><pre data-file="07-direct-register.ps1" data-scope="core"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$Name='APP-ACCESS-LAB-Web'
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications?`$filter=displayName eq '$Name'" -OutputType Hashtable
+if (@($existing.value).Count) { throw 'This app already exists. Do not create/adopt a duplicate.' }
+$body=@{displayName=$Name;description='APP-ACCESS-LAB only. Delete after training.'
+    signInAudience='AzureADMyOrg';isFallbackPublicClient=$false
+    requiredResourceAccess=@(@{resourceAppId='00000003-0000-0000-c000-000000000000'
+        resourceAccess=@(@{id='e1fe6dd8-ba31-4d61-89e7-88639da4683d';type='Scope'})})
+    web=@{redirectUris=@('http://localhost:4300/callback');implicitGrantSettings=@{enableAccessTokenIssuance=$false;enableIdTokenIssuance=$false}}
+}
+$app=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applications" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/applications/$($app.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+$body=@{appId=$app.appId;accountEnabled=$true;appRoleAssignmentRequired=$true
+    tags=@('WindowsAzureActiveDirectoryIntegratedApp')}
+$sp=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+[pscustomobject]@{AppObjectId=$app.id;ClientId=$app.appId;SpId=$sp.id}
+$body=@{passwordCredential=@{displayName='APP-ACCESS-LAB temporary';endDateTime=[datetime]::UtcNow.AddDays(1).ToString('o')}}
+$credential=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applications/$($app.id)/addPassword" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+$env:TENANT_ID=$TenantId.ToString()
+$env:CLIENT_ID=$app.appId
+$env:CLIENT_SECRET=$credential.secretText
+Write-Host 'One-day secret set in process memory only; do not print or record its value.'</code></pre></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="complete"><summary>Automation &mdash; section 07 registration only</summary>
 <pre data-file="07-register.ps1"><code>New-LabRegistration -Name 'APP-ACCESS-LAB-Web' -Secret
 Use-LabClient</code></pre>
 <p><strong>Result:</strong> one single-tenant registration/SP, the exact Web callback, implicit grants/public-client fallback off, sign-in enabled, assignment required and visible to users, the same description and one-day secret. It includes the portal's default User.Read <em>request</em>, but creates <strong>no consent grant, roles or user assignments</strong>. Continue to 08 and 09; those are no longer performed prematurely here.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> exactly one core registration/SP pair, correct Web callback and assignment required.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>The application object stores the registration; the service principal is its local tenant instance. Client ID identifies the app to OIDC; Graph object IDs identify the objects to modify. Secret <em>Value</em>, not secret ID, authenticates this confidential client. HTTP localhost and temporary secrets are lab-only choices.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app">Registration</a><a href="https://learn.microsoft.com/en-us/entra/identity-platform/app-objects-and-service-principals">Objects</a><a href="https://learn.microsoft.com/en-us/entra/identity-platform/reply-url">Redirect URIs</a></p></details>
@@ -322,6 +854,243 @@ Use-LabClient</code></pre>
 <tr><td>client_id / client_secret</td><td>The API's own ID and confidential credential, server-side only</td></tr><tr><td>grant_type</td><td><code>urn:ietf:params:oauth:grant-type:jwt-bearer</code></td></tr><tr><td>requested_token_use</td><td><code>on_behalf_of</code></td></tr><tr><td>assertion</td><td>Validated incoming access token whose audience is this API</td></tr><tr><td>scope</td><td><code>https://graph.microsoft.com/User.Read</code></td></tr>
 </tbody></table></div>
 <ol class="steps" start="3"><li>Call Graph <code>/me</code> with the returned Graph token, not the incoming API token. Verify the response is the original signed-in user's profile.</li></ol>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="shared" data-track="direct"><summary>Explicit commands &mdash; no helper required</summary><p>Run the blocks in order for the selected branch. All inputs, requests and payloads are explicit. Microsoft sign-in/installed cmdlets are still required. No custom functions, dot-sourcing or helper initialization is used. Keep printed <code>path/identity</code> records in local notes for cleanup, never secrets. Do not rerun creation blocks after a partial failure.</p><h5>Request User.Read and create/update its AllPrincipals grant</h5><p>Use the Web registration/SP IDs returned in 07. This does not assign users.</p><pre data-file="08-direct-core-consent.ps1" data-scope="core"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','DelegatedPermissionGrant.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$AppObjectId=[guid](Read-Host 'Web registration OBJECT GUID')
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+if ($app.displayName -ne 'APP-ACCESS-LAB-Web') { throw 'Wrong registration.' }
+$SpId=[guid](Read-Host 'Web enterprise app SP GUID')
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$SpId" -OutputType Hashtable
+if ($sp.appId -ne $app.appId) { throw 'SP does not match this registration.' }
+$ResourceClientId='00000003-0000-0000-c000-000000000000'
+$Scope='User.Read'
+$resources=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals?`$filter=appId eq '$ResourceClientId'" -OutputType Hashtable
+if (@($resources.value).Count -ne 1) { throw 'Expected one resource SP.' }
+$resource=$resources.value[0]
+$permissions=@($resource['oauth2PermissionScopes'] | Where-Object { $null -ne $_ -and $_.value -eq $Scope -and $_.isEnabled })
+if ($permissions.Count -ne 1) { throw 'Scope missing/not propagated; inspect before retrying.' }
+$AppObjectId=$app.id
+$SpId=$sp.id
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+$access=@($app['requiredResourceAccess'] | Where-Object { $null -ne $_ -and $_.resourceAppId -ne $ResourceClientId })
+$current=@($app['requiredResourceAccess'] | Where-Object { $null -ne $_ -and $_.resourceAppId -eq $ResourceClientId })
+if ($current.Count -gt 1) { throw 'Ambiguous resource permissions.' }
+$requested=if ($current.Count) { @($current[0].resourceAccess) } else { @() }
+if (@($requested | Where-Object { $_.id -eq $permissions[0].id -and $_.type -eq 'Scope' }).Count -eq 0) {
+    $requested+=@{id=$permissions[0].id;type='Scope'}
+}
+$access+=@{resourceAppId=$ResourceClientId;resourceAccess=$requested}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$AppObjectId" -Body (@{requiredResourceAccess=$access} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$grants=Invoke-MgGraphRequest -Method GET -Uri "$Graph/oauth2PermissionGrants?`$filter=clientId eq '$SpId'" -OutputType Hashtable
+$matching=@($grants.value | Where-Object { $_.resourceId -eq $resource.id -and $_.consentType -eq 'AllPrincipals' })
+if ($matching.Count -gt 1) { throw 'Ambiguous admin grant.' }
+if ($matching.Count -eq 0) {
+    $body=@{clientId=$SpId.ToString();resourceId=$resource.id;consentType='AllPrincipals';scope=$Scope}
+    $grant=Invoke-MgGraphRequest -Method POST -Uri "$Graph/oauth2PermissionGrants" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+    @{path="/oauth2PermissionGrants/$($grant.id)";identity=@{clientId=$SpId.ToString();resourceId=$resource.id}} | ConvertTo-Json -Compress
+} else {
+    $names=@($matching[0].scope -split ' ' | Where-Object { $_ })
+    if ($names -notcontains $Scope) { $names+=$Scope }
+    Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/oauth2PermissionGrants/$($matching[0].id)" -Body (@{scope=($names -join ' ')} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+}</code></pre>
+<h5>Register the custom API/caller and grant access_as_user</h5><p>Shared: implement and test the separate API and caller. The API scope does not create an app-only role early.</p><pre data-file="08-direct-api.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','DelegatedPermissionGrant.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$Name='APP-ACCESS-LAB-API'
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications?`$filter=displayName eq '$Name'" -OutputType Hashtable
+if (@($existing.value).Count) { throw 'This app already exists. Do not create/adopt a duplicate.' }
+$body=@{displayName=$Name;description='APP-ACCESS-LAB only. Delete after training.'
+    signInAudience='AzureADMyOrg';isFallbackPublicClient=$false
+    requiredResourceAccess=@(@{resourceAppId='00000003-0000-0000-c000-000000000000'
+        resourceAccess=@(@{id='e1fe6dd8-ba31-4d61-89e7-88639da4683d';type='Scope'})})
+}
+$app=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applications" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/applications/$($app.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+$body=@{appId=$app.appId;accountEnabled=$true;appRoleAssignmentRequired=$false
+    tags=@('WindowsAzureActiveDirectoryIntegratedApp')}
+$sp=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+[pscustomobject]@{AppObjectId=$app.id;ClientId=$app.appId;SpId=$sp.id}
+
+$scopeId=[guid]::NewGuid().ToString()
+$body=@{identifierUris=@("api://$($app.appId)")
+    api=@{oauth2PermissionScopes=@(@{id=$scopeId;value='access_as_user';type='Admin';isEnabled=$true
+        adminConsentDisplayName='Access the lab API';adminConsentDescription='Access the disposable API as the signed-in user'})}}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$($app.id)" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$api=$app
+$Name='APP-ACCESS-LAB-Caller'
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications?`$filter=displayName eq '$Name'" -OutputType Hashtable
+if (@($existing.value).Count) { throw 'This app already exists. Do not create/adopt a duplicate.' }
+$body=@{displayName=$Name;description='APP-ACCESS-LAB only. Delete after training.'
+    signInAudience='AzureADMyOrg';isFallbackPublicClient=$false
+    requiredResourceAccess=@(@{resourceAppId='00000003-0000-0000-c000-000000000000'
+        resourceAccess=@(@{id='e1fe6dd8-ba31-4d61-89e7-88639da4683d';type='Scope'})})
+    web=@{redirectUris=@((Read-Host 'Actual caller Web redirect URI'));implicitGrantSettings=@{enableAccessTokenIssuance=$false;enableIdTokenIssuance=$false}}
+}
+$app=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applications" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/applications/$($app.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+$body=@{appId=$app.appId;accountEnabled=$true;appRoleAssignmentRequired=$false
+    tags=@('WindowsAzureActiveDirectoryIntegratedApp')}
+$sp=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+[pscustomobject]@{AppObjectId=$app.id;ClientId=$app.appId;SpId=$sp.id}
+
+$ResourceClientId=$api.appId
+$Scope='access_as_user'
+$resources=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals?`$filter=appId eq '$ResourceClientId'" -OutputType Hashtable
+if (@($resources.value).Count -ne 1) { throw 'Expected one resource SP.' }
+$resource=$resources.value[0]
+$permissions=@($resource['oauth2PermissionScopes'] | Where-Object { $null -ne $_ -and $_.value -eq $Scope -and $_.isEnabled })
+if ($permissions.Count -ne 1) { throw 'Scope missing/not propagated; inspect before retrying.' }
+$AppObjectId=$app.id
+$SpId=$sp.id
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+$access=@($app['requiredResourceAccess'] | Where-Object { $null -ne $_ -and $_.resourceAppId -ne $ResourceClientId })
+$current=@($app['requiredResourceAccess'] | Where-Object { $null -ne $_ -and $_.resourceAppId -eq $ResourceClientId })
+if ($current.Count -gt 1) { throw 'Ambiguous resource permissions.' }
+$requested=if ($current.Count) { @($current[0].resourceAccess) } else { @() }
+if (@($requested | Where-Object { $_.id -eq $permissions[0].id -and $_.type -eq 'Scope' }).Count -eq 0) {
+    $requested+=@{id=$permissions[0].id;type='Scope'}
+}
+$access+=@{resourceAppId=$ResourceClientId;resourceAccess=$requested}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$AppObjectId" -Body (@{requiredResourceAccess=$access} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$grants=Invoke-MgGraphRequest -Method GET -Uri "$Graph/oauth2PermissionGrants?`$filter=clientId eq '$SpId'" -OutputType Hashtable
+$matching=@($grants.value | Where-Object { $_.resourceId -eq $resource.id -and $_.consentType -eq 'AllPrincipals' })
+if ($matching.Count -gt 1) { throw 'Ambiguous admin grant.' }
+if ($matching.Count -eq 0) {
+    $body=@{clientId=$SpId.ToString();resourceId=$resource.id;consentType='AllPrincipals';scope=$Scope}
+    $grant=Invoke-MgGraphRequest -Method POST -Uri "$Graph/oauth2PermissionGrants" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+    @{path="/oauth2PermissionGrants/$($grant.id)";identity=@{clientId=$SpId.ToString();resourceId=$resource.id}} | ConvertTo-Json -Compress
+} else {
+    $names=@($matching[0].scope -split ' ' | Where-Object { $_ })
+    if ($names -notcontains $Scope) { $names+=$Scope }
+    Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/oauth2PermissionGrants/$($matching[0].id)" -Body (@{scope=($names -join ' ')} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+}</code></pre>
+<h5>Create the Applications-only API role, daemon and actual grant</h5><p>The User.Read request from registration is preserved. Configure the daemon/API implementation and test roles=Lab.Api.Read separately.</p><pre data-file="08-direct-app-only.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','AppRoleAssignment.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$AppObjectId=[guid](Read-Host 'APP-ACCESS-LAB-API registration OBJECT GUID')
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+if ($app.displayName -ne 'APP-ACCESS-LAB-API') { throw 'Wrong registration.' }
+$SpId=[guid](Read-Host 'APP-ACCESS-LAB-API enterprise app SP GUID')
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$SpId" -OutputType Hashtable
+if ($sp.appId -ne $app.appId) { throw 'SP does not match this registration.' }
+$api=$app
+$ApiSpId=$sp.id
+$roles=@($api['appRoles'] | Where-Object { $null -ne $_ -and $_.value -ne 'Lab.Api.Read' })
+$previous=@($api['appRoles'] | Where-Object { $null -ne $_ -and $_.value -eq 'Lab.Api.Read' })
+if ($previous.Count -gt 1) { throw 'Ambiguous API role.' }
+$roleId=if ($previous.Count) { $previous[0].id } else { [guid]::NewGuid().ToString() }
+$roles+=@{id=$roleId;displayName='Lab API Reader';value='Lab.Api.Read';description='Read the lab API';allowedMemberTypes=@('Application');isEnabled=$true}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$($api.id)" -Body (@{appRoles=$roles} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$Name='APP-ACCESS-LAB-Daemon'
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications?`$filter=displayName eq '$Name'" -OutputType Hashtable
+if (@($existing.value).Count) { throw 'This app already exists. Do not create/adopt a duplicate.' }
+$body=@{displayName=$Name;description='APP-ACCESS-LAB only. Delete after training.'
+    signInAudience='AzureADMyOrg';isFallbackPublicClient=$false
+    requiredResourceAccess=@(@{resourceAppId='00000003-0000-0000-c000-000000000000'
+        resourceAccess=@(@{id='e1fe6dd8-ba31-4d61-89e7-88639da4683d';type='Scope'})})
+}
+$app=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applications" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/applications/$($app.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+$body=@{appId=$app.appId;accountEnabled=$true;appRoleAssignmentRequired=$false
+    tags=@('WindowsAzureActiveDirectoryIntegratedApp')}
+$sp=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+[pscustomobject]@{AppObjectId=$app.id;ClientId=$app.appId;SpId=$sp.id}
+$body=@{passwordCredential=@{displayName='APP-ACCESS-LAB temporary';endDateTime=[datetime]::UtcNow.AddDays(1).ToString('o')}}
+$credential=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applications/$($app.id)/addPassword" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+$env:TENANT_ID=$TenantId.ToString()
+$env:CLIENT_ID=$app.appId
+$env:CLIENT_SECRET=$credential.secretText
+Write-Host 'One-day secret set in process memory only; do not print or record its value.'
+$apiSp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$ApiSpId" -OutputType Hashtable
+$selected=@($apiSp['appRoles'] | Where-Object { $null -ne $_ -and $_.value -eq 'Lab.Api.Read' -and $_.isEnabled })
+if ($selected.Count -ne 1) { throw 'API role not propagated; inspect before retrying the permission/grant steps.' }
+$access=@($app['requiredResourceAccess'])
+$access+=@{resourceAppId=$api.appId;resourceAccess=@(@{id=$selected[0].id;type='Role'})}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$($app.id)" -Body (@{requiredResourceAccess=$access} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$body=@{principalId=$sp.id;resourceId=$ApiSpId;appRoleId=$selected[0].id}
+$grant=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignments" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)/appRoleAssignments/$($grant.id)";identity=@{resourceId=$ApiSpId;appRoleId=$selected[0].id}} | ConvertTo-Json -Compress</code></pre>
+<h5>Give the API delegated Graph consent and its own credential</h5><p>Shared: implement the validated incoming API token/OBO exchange and Graph call. The process environment now contains the API client, not the core client.</p><pre data-file="08-direct-obo.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','DelegatedPermissionGrant.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$AppObjectId=[guid](Read-Host 'APP-ACCESS-LAB-API registration OBJECT GUID')
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+if ($app.displayName -ne 'APP-ACCESS-LAB-API') { throw 'Wrong registration.' }
+$SpId=[guid](Read-Host 'APP-ACCESS-LAB-API enterprise app SP GUID')
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$SpId" -OutputType Hashtable
+if ($sp.appId -ne $app.appId) { throw 'SP does not match this registration.' }
+$ResourceClientId='00000003-0000-0000-c000-000000000000'
+$Scope='User.Read'
+$resources=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals?`$filter=appId eq '$ResourceClientId'" -OutputType Hashtable
+if (@($resources.value).Count -ne 1) { throw 'Expected one resource SP.' }
+$resource=$resources.value[0]
+$permissions=@($resource['oauth2PermissionScopes'] | Where-Object { $null -ne $_ -and $_.value -eq $Scope -and $_.isEnabled })
+if ($permissions.Count -ne 1) { throw 'Scope missing/not propagated; inspect before retrying.' }
+$AppObjectId=$app.id
+$SpId=$sp.id
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+$access=@($app['requiredResourceAccess'] | Where-Object { $null -ne $_ -and $_.resourceAppId -ne $ResourceClientId })
+$current=@($app['requiredResourceAccess'] | Where-Object { $null -ne $_ -and $_.resourceAppId -eq $ResourceClientId })
+if ($current.Count -gt 1) { throw 'Ambiguous resource permissions.' }
+$requested=if ($current.Count) { @($current[0].resourceAccess) } else { @() }
+if (@($requested | Where-Object { $_.id -eq $permissions[0].id -and $_.type -eq 'Scope' }).Count -eq 0) {
+    $requested+=@{id=$permissions[0].id;type='Scope'}
+}
+$access+=@{resourceAppId=$ResourceClientId;resourceAccess=$requested}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$AppObjectId" -Body (@{requiredResourceAccess=$access} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$grants=Invoke-MgGraphRequest -Method GET -Uri "$Graph/oauth2PermissionGrants?`$filter=clientId eq '$SpId'" -OutputType Hashtable
+$matching=@($grants.value | Where-Object { $_.resourceId -eq $resource.id -and $_.consentType -eq 'AllPrincipals' })
+if ($matching.Count -gt 1) { throw 'Ambiguous admin grant.' }
+if ($matching.Count -eq 0) {
+    $body=@{clientId=$SpId.ToString();resourceId=$resource.id;consentType='AllPrincipals';scope=$Scope}
+    $grant=Invoke-MgGraphRequest -Method POST -Uri "$Graph/oauth2PermissionGrants" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+    @{path="/oauth2PermissionGrants/$($grant.id)";identity=@{clientId=$SpId.ToString();resourceId=$resource.id}} | ConvertTo-Json -Compress
+} else {
+    $names=@($matching[0].scope -split ' ' | Where-Object { $_ })
+    if ($names -notcontains $Scope) { $names+=$Scope }
+    Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/oauth2PermissionGrants/$($matching[0].id)" -Body (@{scope=($names -join ' ')} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+}
+
+$body=@{passwordCredential=@{displayName='APP-ACCESS-LAB temporary';endDateTime=[datetime]::UtcNow.AddDays(1).ToString('o')}}
+$credential=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applications/$($app.id)/addPassword" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+$env:TENANT_ID=$TenantId.ToString()
+$env:CLIENT_ID=$app.appId
+$env:CLIENT_SECRET=$credential.secretText
+Write-Host 'One-day secret set in process memory only; do not print or record its value.'</code></pre></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="shared"><summary>Automation &mdash; core consent and each optional API registration branch</summary>
 <h4>Core</h4><pre data-file="08-core-consent.ps1"><code>Set-LabDelegatedPermission -Consent</code></pre>
 <p><strong>Result:</strong> User.Read in the core app's <code>requiredResourceAccess</code> and its matching tenant-wide <code>oauth2PermissionGrants</code> AllPrincipals grant. No Reader assignment is created here.</p>
@@ -340,6 +1109,10 @@ Set-LabApplicationPermission</code></pre>
 New-LabCredential -Name 'APP-ACCESS-LAB-API'</code></pre>
 <p>Result: delegated Graph User.Read request/admin grant on the API and its own one-day credential. Credentials remain in process memory; use <code>Use-LabClient -Name 'APP-ACCESS-LAB-Daemon'</code> or the API name when configuring their separate implementation, then restore the core with <code>Use-LabClient</code>.</p>
 <p><strong>Shared:</strong> configure/run the separate API, caller, daemon and OBO implementations and perform the token-audience/scope/role/profile tests above. Registration scripts do not implement those servers. If a scope/role is still propagating, retry only the failed permission command after inspection, not object creation.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify core:</strong> delegated User.Read is admin-consented. Verify API/OBO/app-only results only if you ran those separate implementations.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>Delegated permissions act in a user's context; application permissions act without a user. <code>/me</code> requires delegated access. Exposed scopes and application app roles describe an API contract; its server must enforce them. OBO exchanges an API token for a downstream token rather than forwarding it.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity-platform/permissions-consent-overview">Permissions</a><a href="https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-configure-app-expose-web-apis">Expose API</a><a href="https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-on-behalf-of-flow">OBO implementation</a></p></details>
@@ -364,6 +1137,80 @@ New-LabCredential -Name 'APP-ACCESS-LAB-API'</code></pre>
 <li>Assign that group to <strong>Lab Reader</strong> through the enterprise-app assignment dialog above.</li>
 <li>Remove allowed's direct Reader assignment so the group is the only path. Verify allowed succeeds and denied remains blocked. Do not use nested groups.</li>
 </ol>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="complete" data-track="direct"><summary>Explicit commands &mdash; no helper required</summary><p>Run the blocks in order for the selected branch. All inputs, requests and payloads are explicit. Microsoft sign-in/installed cmdlets are still required. No custom functions, dot-sourcing or helper initialization is used. Keep printed <code>path/identity</code> records in local notes for cleanup, never secrets. Do not rerun creation blocks after a partial failure.</p><h5>PATCH the two roles and assign allowed to the Reader GUID</h5><p>Use the Web IDs from 07 and allowed's ID from 00. A missing propagated role stops the script; retry only the assignment step after inspection.</p><pre data-file="09-direct-roles.ps1" data-scope="core"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','AppRoleAssignment.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$AppObjectId=[guid](Read-Host 'Web registration OBJECT GUID')
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+if ($app.displayName -ne 'APP-ACCESS-LAB-Web') { throw 'Wrong registration.' }
+$SpId=[guid](Read-Host 'Web enterprise app SP GUID')
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$SpId" -OutputType Hashtable
+if ($sp.appId -ne $app.appId) { throw 'SP does not match this registration.' }
+$roles=@($app['appRoles'] | Where-Object { $null -ne $_ -and $_.value -notin @('Lab.Reader','Lab.Observer') })
+foreach ($spec in @(
+    @{value='Lab.Reader';name='Lab Reader';description='Read protected lab content'},
+    @{value='Lab.Observer';name='Lab Observer';description='Sign in without protected access'}
+)) {
+    $previous=@($app['appRoles'] | Where-Object { $null -ne $_ -and $_.value -eq $spec.value })
+    if ($previous.Count -gt 1) { throw 'Ambiguous app role.' }
+    $id=if ($previous.Count) { $previous[0].id } else { [guid]::NewGuid().ToString() }
+    $roles+=@{id=$id;displayName=$spec.name;value=$spec.value;description=$spec.description;allowedMemberTypes=@('User');isEnabled=$true}
+}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$($app.id)" -Body (@{appRoles=$roles} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/servicePrincipals/$($sp.id)" -Body (@{appRoleAssignmentRequired=$true;accountEnabled=$true} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$AllowedId=[guid](Read-Host 'Allowed USER object GUID')
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)" -OutputType Hashtable
+$selected=@($sp['appRoles'] | Where-Object { $null -ne $_ -and $_.value -eq 'Lab.Reader' -and $_.isEnabled })
+if ($selected.Count -ne 1) { throw 'Role not propagated. Retry only the assignment after inspection.' }
+$body=@{principalId=$AllowedId.ToString();resourceId=$sp.id;appRoleId=$selected[0].id}
+$assignment=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)/appRoleAssignedTo/$($assignment.id)";identity=@{principalId=$AllowedId.ToString();appRoleId=$selected[0].id}} | ConvertTo-Json -Compress</code></pre>
+<h5>Create an Assigned security group, assign Reader, remove direct access</h5><p>P1/P2 only. Keep the group/assignment records and remove the deleted direct-assignment record from your cleanup list.</p><pre data-file="09-direct-group.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','AppRoleAssignment.ReadWrite.All','Group.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$AppObjectId=[guid](Read-Host 'Web registration OBJECT GUID')
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+if ($app.displayName -ne 'APP-ACCESS-LAB-Web') { throw 'Wrong registration.' }
+$SpId=[guid](Read-Host 'Web enterprise app SP GUID')
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$SpId" -OutputType Hashtable
+if ($sp.appId -ne $app.appId) { throw 'SP does not match this registration.' }
+$AllowedId=[guid](Read-Host 'Allowed USER object GUID')
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/groups?`$filter=displayName eq 'APP-ACCESS-LAB-Readers'" -OutputType Hashtable
+if (@($existing.value).Count) { throw 'Group exists; do not adopt it.' }
+$body=@{displayName='APP-ACCESS-LAB-Readers';mailNickname='APP-ACCESS-LAB-Readers'
+    mailEnabled=$false;securityEnabled=$true;groupTypes=@()
+    'members@odata.bind'=@("$Graph/users/$AllowedId")}
+$group=Invoke-MgGraphRequest -Method POST -Uri "$Graph/groups" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/groups/$($group.id)";identity=@{displayName=$group.displayName}} | ConvertTo-Json -Compress
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)" -OutputType Hashtable
+$selected=@($sp['appRoles'] | Where-Object { $null -ne $_ -and $_.value -eq 'Lab.Reader' -and $_.isEnabled })
+if ($selected.Count -ne 1) { throw 'Role not propagated. Retry only the assignment after inspection.' }
+$body=@{principalId=$group.id.ToString();resourceId=$sp.id;appRoleId=$selected[0].id}
+$assignment=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)/appRoleAssignedTo/$($assignment.id)";identity=@{principalId=$group.id.ToString();appRoleId=$selected[0].id}} | ConvertTo-Json -Compress
+$assignments=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo" -OutputType Hashtable
+$direct=@($assignments.value | Where-Object { $_.principalId -eq $AllowedId.ToString() -and $_.appRoleId -eq $selected[0].id })
+if ($direct.Count -ne 1) { throw 'Resolve the exact direct Reader assignment before removal.' }
+Invoke-MgGraphRequest -Method DELETE -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo/$($direct[0].id)" | Out-Null
+Write-Host "Removed direct assignment $($direct[0].id); update your cleanup records."</code></pre></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="complete"><summary>Automation &mdash; create roles and assign Reader to allowed only</summary>
 <pre data-file="09-roles-and-assignment.ps1"><code>Set-LabUserRoles
 Add-LabAppAssignment -PrincipalId (Get-LabObject 'lab-app-allowed').id | Out-Null</code></pre>
@@ -371,6 +1218,10 @@ Add-LabAppAssignment -PrincipalId (Get-LabObject 'lab-app-allowed').id | Out-Nul
 <h4>Optional group route &mdash; after the direct route, P1/P2 only</h4>
 <pre data-file="09-group-route.ps1"><code>New-LabReaderGroup</code></pre>
 <p>Result: Assigned security group with only allowed as a member, group-to-Reader assignment and allowed's direct assignment removed. Zero-GUID Default Access is not Reader.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> only allowed receives Reader; denied is unassigned. Continue to 13.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>Assignment required gates new sign-ins. The application separately enforces the <code>Lab.Reader</code> claim. Group assignment requires P1/P2 and does not expand nested groups. Existing tokens/sessions do not change when assignments change.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity-platform/howto-add-app-roles-in-apps">App roles</a><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/assign-user-or-group-access-portal">Assignments</a></p></details>
@@ -393,6 +1244,127 @@ Add-LabAppAssignment -PrincipalId (Get-LabObject 'lab-app-allowed').id | Out-Nul
 <li>In the second tenant's SP &gt; <strong>Properties</strong>, enable sign-in and assignment required; assign only its allowed ordinary member to Reader.</li>
 <li>Sign in with second-tenant allowed/denied profiles to that same multitenant implementation. Verify the accepted tenant, Reader access and unassigned denial.</li>
 </ol>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="shared" data-track="direct"><summary>Explicit commands &mdash; no helper required</summary><p>Run the blocks in order for the selected branch. All inputs, requests and payloads are explicit. Microsoft sign-in/installed cmdlets are still required. No custom functions, dot-sourcing or helper initialization is used. Keep printed <code>path/identity</code> records in local notes for cleanup, never secrets. Do not rerun creation blocks after a partial failure.</p><h5>Create/configure the SPA, consent and allowed Reader access</h5><p>Shared: configure and run the separate MSAL browser implementation. No browser secret is created.</p><pre data-file="10-direct-spa.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','DelegatedPermissionGrant.ReadWrite.All','AppRoleAssignment.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$Name='APP-ACCESS-LAB-SPA'
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications?`$filter=displayName eq '$Name'" -OutputType Hashtable
+if (@($existing.value).Count) { throw 'This app already exists. Do not create/adopt a duplicate.' }
+$body=@{displayName=$Name;description='APP-ACCESS-LAB only. Delete after training.'
+    signInAudience='AzureADMyOrg';isFallbackPublicClient=$false
+    requiredResourceAccess=@(@{resourceAppId='00000003-0000-0000-c000-000000000000'
+        resourceAccess=@(@{id='e1fe6dd8-ba31-4d61-89e7-88639da4683d';type='Scope'})})
+    spa=@{redirectUris=@('http://localhost:5173')}
+}
+$app=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applications" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/applications/$($app.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+$body=@{appId=$app.appId;accountEnabled=$true;appRoleAssignmentRequired=$true
+    tags=@('WindowsAzureActiveDirectoryIntegratedApp')}
+$sp=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+[pscustomobject]@{AppObjectId=$app.id;ClientId=$app.appId;SpId=$sp.id}
+
+$ResourceClientId='00000003-0000-0000-c000-000000000000'
+$Scope='User.Read'
+$resources=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals?`$filter=appId eq '$ResourceClientId'" -OutputType Hashtable
+if (@($resources.value).Count -ne 1) { throw 'Expected one resource SP.' }
+$resource=$resources.value[0]
+$permissions=@($resource['oauth2PermissionScopes'] | Where-Object { $null -ne $_ -and $_.value -eq $Scope -and $_.isEnabled })
+if ($permissions.Count -ne 1) { throw 'Scope missing/not propagated; inspect before retrying.' }
+$AppObjectId=$app.id
+$SpId=$sp.id
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+$access=@($app['requiredResourceAccess'] | Where-Object { $null -ne $_ -and $_.resourceAppId -ne $ResourceClientId })
+$current=@($app['requiredResourceAccess'] | Where-Object { $null -ne $_ -and $_.resourceAppId -eq $ResourceClientId })
+if ($current.Count -gt 1) { throw 'Ambiguous resource permissions.' }
+$requested=if ($current.Count) { @($current[0].resourceAccess) } else { @() }
+if (@($requested | Where-Object { $_.id -eq $permissions[0].id -and $_.type -eq 'Scope' }).Count -eq 0) {
+    $requested+=@{id=$permissions[0].id;type='Scope'}
+}
+$access+=@{resourceAppId=$ResourceClientId;resourceAccess=$requested}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$AppObjectId" -Body (@{requiredResourceAccess=$access} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$grants=Invoke-MgGraphRequest -Method GET -Uri "$Graph/oauth2PermissionGrants?`$filter=clientId eq '$SpId'" -OutputType Hashtable
+$matching=@($grants.value | Where-Object { $_.resourceId -eq $resource.id -and $_.consentType -eq 'AllPrincipals' })
+if ($matching.Count -gt 1) { throw 'Ambiguous admin grant.' }
+if ($matching.Count -eq 0) {
+    $body=@{clientId=$SpId.ToString();resourceId=$resource.id;consentType='AllPrincipals';scope=$Scope}
+    $grant=Invoke-MgGraphRequest -Method POST -Uri "$Graph/oauth2PermissionGrants" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+    @{path="/oauth2PermissionGrants/$($grant.id)";identity=@{clientId=$SpId.ToString();resourceId=$resource.id}} | ConvertTo-Json -Compress
+} else {
+    $names=@($matching[0].scope -split ' ' | Where-Object { $_ })
+    if ($names -notcontains $Scope) { $names+=$Scope }
+    Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/oauth2PermissionGrants/$($matching[0].id)" -Body (@{scope=($names -join ' ')} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+}
+
+$roles=@($app['appRoles'] | Where-Object { $null -ne $_ -and $_.value -notin @('Lab.Reader','Lab.Observer') })
+foreach ($spec in @(
+    @{value='Lab.Reader';name='Lab Reader';description='Read protected lab content'},
+    @{value='Lab.Observer';name='Lab Observer';description='Sign in without protected access'}
+)) {
+    $previous=@($app['appRoles'] | Where-Object { $null -ne $_ -and $_.value -eq $spec.value })
+    if ($previous.Count -gt 1) { throw 'Ambiguous app role.' }
+    $id=if ($previous.Count) { $previous[0].id } else { [guid]::NewGuid().ToString() }
+    $roles+=@{id=$id;displayName=$spec.name;value=$spec.value;description=$spec.description;allowedMemberTypes=@('User');isEnabled=$true}
+}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$($app.id)" -Body (@{appRoles=$roles} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/servicePrincipals/$($sp.id)" -Body (@{appRoleAssignmentRequired=$true;accountEnabled=$true} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+$AllowedId=[guid](Read-Host 'Allowed USER object GUID')
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)" -OutputType Hashtable
+$selected=@($sp['appRoles'] | Where-Object { $null -ne $_ -and $_.value -eq 'Lab.Reader' -and $_.isEnabled })
+if ($selected.Count -ne 1) { throw 'Role not propagated. Retry only the assignment after inspection.' }
+$body=@{principalId=$AllowedId.ToString();resourceId=$sp.id;appRoleId=$selected[0].id}
+$assignment=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)/appRoleAssignedTo/$($assignment.id)";identity=@{principalId=$AllowedId.ToString();appRoleId=$selected[0].id}} | ConvertTo-Json -Compress</code></pre>
+<h5>Create/configure the multitenant home registration</h5><p>Shared: actual implementation/optional credential, accepted-tenant list, second-tenant consent/SP assignment and two-user test. These commands stay in the home tenant.</p><pre data-file="10-direct-multi.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$Name='APP-ACCESS-LAB-Multi'
+$existing=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications?`$filter=displayName eq '$Name'" -OutputType Hashtable
+if (@($existing.value).Count) { throw 'This app already exists. Do not create/adopt a duplicate.' }
+$body=@{displayName=$Name;description='APP-ACCESS-LAB only. Delete after training.'
+    signInAudience='AzureADMultipleOrgs';isFallbackPublicClient=$false
+    requiredResourceAccess=@(@{resourceAppId='00000003-0000-0000-c000-000000000000'
+        resourceAccess=@(@{id='e1fe6dd8-ba31-4d61-89e7-88639da4683d';type='Scope'})})
+    web=@{redirectUris=@((Read-Host 'Actual multitenant Web redirect URI'));implicitGrantSettings=@{enableAccessTokenIssuance=$false;enableIdTokenIssuance=$false}}
+}
+$app=Invoke-MgGraphRequest -Method POST -Uri "$Graph/applications" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/applications/$($app.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+$body=@{appId=$app.appId;accountEnabled=$true;appRoleAssignmentRequired=$true
+    tags=@('WindowsAzureActiveDirectoryIntegratedApp')}
+$sp=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)";identity=@{appId=$app.appId;displayName=$Name}} | ConvertTo-Json -Compress
+[pscustomobject]@{AppObjectId=$app.id;ClientId=$app.appId;SpId=$sp.id}
+
+$roles=@($app['appRoles'] | Where-Object { $null -ne $_ -and $_.value -notin @('Lab.Reader','Lab.Observer') })
+foreach ($spec in @(
+    @{value='Lab.Reader';name='Lab Reader';description='Read protected lab content'},
+    @{value='Lab.Observer';name='Lab Observer';description='Sign in without protected access'}
+)) {
+    $previous=@($app['appRoles'] | Where-Object { $null -ne $_ -and $_.value -eq $spec.value })
+    if ($previous.Count -gt 1) { throw 'Ambiguous app role.' }
+    $id=if ($previous.Count) { $previous[0].id } else { [guid]::NewGuid().ToString() }
+    $roles+=@{id=$id;displayName=$spec.name;value=$spec.value;description=$spec.description;allowedMemberTypes=@('User');isEnabled=$true}
+}
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/applications/$($app.id)" -Body (@{appRoles=$roles} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/servicePrincipals/$($sp.id)" -Body (@{appRoleAssignmentRequired=$true;accountEnabled=$true} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null</code></pre></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="shared"><summary>Hybrid route &mdash; configure each client, share implementations and second-tenant consent</summary>
 <h4>SPA</h4><pre data-file="10-spa.ps1"><code>New-LabRegistration -Name 'APP-ACCESS-LAB-SPA' -Platform Spa -RedirectUri 'http://localhost:5173' | Out-Null
 Set-LabDelegatedPermission -ClientName 'APP-ACCESS-LAB-SPA' -Consent
@@ -403,6 +1375,10 @@ Add-LabAppAssignment -Name 'APP-ACCESS-LAB-SPA' -PrincipalId (Get-LabObject 'lab
 Set-LabDelegatedPermission -ClientName 'APP-ACCESS-LAB-Multi'
 Set-LabUserRoles -Name 'APP-ACCESS-LAB-Multi'</code></pre>
 <p><strong>Result:</strong> separate workforce-multitenant registration/SP, actual Web redirect, User.Read requested, Reader/Observer roles and enabled/assignment-required home SP. <strong>Shared:</strong> implementation/optional credential configuration, second-tenant administrator consent, second-tenant SP properties/allowed assignment and its two-user test (multitenant steps 2-5). The initialized helper is bound to the home tenant; it does not silently switch tenants or adopt the externally consented SP.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> each variant uses its own client/SP and actual implementation; do not change the core sample's tenant restriction.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>A SPA is a public client using code/PKCE without a secret. A multitenant app has one home application object and a separate service principal/grant/assignment set in each consenting tenant. Supporting personal accounts is a separate audience choice, not the workforce-only setting used here.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-single-page-app-sign-in">SPA implementation</a><a href="https://learn.microsoft.com/en-us/entra/identity-platform/howto-convert-app-to-be-multi-tenant">Multitenant implementation</a></p></details>
@@ -425,8 +1401,19 @@ Set-LabUserRoles -Name 'APP-ACCESS-LAB-Multi'</code></pre>
 <li>Record the core app's original <strong>Enabled for users to sign-in</strong> value. Set it to <strong>No</strong> in <strong>Enterprise app &gt; Properties</strong>; save.</li>
 <li>Clear the app session and attempt a new sign-in. Confirm denial; restore the original property value before continuing.</li>
 </ol>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="manual-only" data-track="direct"><summary>Manual-only boundary &mdash; same for both tracks</summary><p>Create the exact restricted alert-only policy in the supported Defender portal and perform the optional remediation test there. SP disable is not an automation substitute for policy creation.</p></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="manual-only"><summary>Manual-only &mdash; Defender policy configuration uses its supported portal</summary>
 <p>No supported policy-creation API is used by this lab for the exact OAuth filters/preview/alert-only actions above. Complete the numbered policy and optional remediation steps in the portal. The former SP-disable script was removed as an alternative: it changed Entra sign-in state but did not create this Defender policy.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> policy scope/actions are lab-only; any alert identifies the intended client; remediation is restored.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>App governance evaluates permissions and usage. An OAuth app policy can alert or remediate; banning can disable the enterprise app. Revoking an API grant, disabling sign-in and removing user assignment have different effects.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/defender-cloud-apps/app-governance-get-started">Governance setup</a><a href="https://learn.microsoft.com/en-us/defender-cloud-apps/app-permission-policy">OAuth policy fields</a></p></details>
@@ -460,12 +1447,44 @@ SigninLogs
 | project TimeGenerated, UserId, ResultType, ResultDescription,
           ConditionalAccessStatus, CorrelationId
 | order by TimeGenerated asc</code></pre>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="shared" data-track="direct"><summary>Explicit commands &mdash; no helper required</summary><p>Run the blocks in order for the selected branch. All inputs, requests and payloads are explicit. Microsoft sign-in/installed cmdlets are still required. No custom functions, dot-sourcing or helper initialization is used. Keep printed <code>path/identity</code> records in local notes for cleanup, never secrets. Do not rerun creation blocks after a partial failure.</p><h5>Create the workspace and PUT the actual tenant diagnostic setting</h5><p>Shared: My Apps collection creation and Entra/KQL event checks. This is billable Azure configuration; record subscription, workspace resource ID and diagnostic path.</p><pre data-file="12-direct-log-export.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$SubscriptionId=[guid](Read-Host 'Lab Azure subscription GUID')
+$Location=Read-Host 'Supported lab region'
+$WorkspaceName=Read-Host 'law-app-access-UNIQUE_SUFFIX'
+if ($WorkspaceName -notmatch '^law-app-access-') { throw 'Use a lab workspace name.' }
+Install-Module Az.Accounts,Az.Resources,Az.OperationalInsights -Scope CurrentUser
+Connect-AzAccount -Tenant $TenantId -Subscription $SubscriptionId | Out-Null
+$context=Get-AzContext
+if ($context.Tenant.Id -ne $TenantId.ToString() -or $context.Subscription.Id -ne $SubscriptionId.ToString()) { throw 'Wrong Azure context.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Not confirmed.' }
+if (@(Get-AzResourceGroup | Where-Object ResourceGroupName -eq 'rg-app-access-lab').Count) { throw 'Do not adopt a shared resource group.' }
+$DiagnosticPath='/providers/microsoft.aadiam/diagnosticSettings/APP-ACCESS-LAB-Logs?api-version=2017-04-01'
+$settings=Invoke-AzRestMethod -Method GET -Path '/providers/microsoft.aadiam/diagnosticSettings?api-version=2017-04-01'
+if ($settings.StatusCode -ne 200) { throw 'Cannot inspect diagnostic settings.' }
+if (@(($settings.Content | ConvertFrom-Json -AsHashtable).value | Where-Object name -eq 'APP-ACCESS-LAB-Logs').Count) { throw 'Do not overwrite an existing diagnostic setting.' }
+New-AzResourceGroup -Name 'rg-app-access-lab' -Location $Location | Out-Null
+$workspace=New-AzOperationalInsightsWorkspace -ResourceGroupName 'rg-app-access-lab' -Name $WorkspaceName -Location $Location -RetentionInDays 30
+[pscustomobject]@{SubscriptionId=$SubscriptionId;ResourceGroup='rg-app-access-lab';WorkspaceId=$workspace.ResourceId;DiagnosticPath=$DiagnosticPath}
+$body=@{properties=@{workspaceId=$workspace.ResourceId;logs=@(@{category='SignInLogs';enabled=$true},@{category='AuditLogs';enabled=$true})}}
+$response=Invoke-AzRestMethod -Method PUT -Path $DiagnosticPath -Payload ($body | ConvertTo-Json -Depth 10)
+if ($response.StatusCode -notin @(200,201)) { throw "Diagnostic setting write failed: $($response.StatusCode)" }</code></pre></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="shared"><summary>Hybrid route &mdash; create the Azure workspace and actual diagnostic export</summary>
 <p><strong>Shared:</strong> create the My Apps collection with its applications/owner/allowed visibility in collection steps 1-4; no supported collection management API is used here. Inspect the actual Entra events and run the same workspace KQL verification in either route.</p>
 <p><strong>Azure prerequisites:</strong> an authorized lab subscription/resource creator and Entra diagnostic-settings administrator. The helper refuses an existing lab resource group or diagnostic-setting name.</p>
 <pre data-file="12-log-export.ps1"><code>Install-Module Az.Accounts,Az.Resources,Az.OperationalInsights -Scope CurrentUser
 New-LabLogExport -SubscriptionId (Read-Host 'Lab Azure subscription GUID') -Location (Read-Host 'Supported lab region') -WorkspaceName (Read-Host 'law-app-access-UNIQUE_SUFFIX')</code></pre>
 <p><strong>Result:</strong> <code>rg-app-access-lab</code>, the named workspace in that same subscription/region with 30-day retention, and the tenant's <code>APP-ACCESS-LAB-Logs</code> diagnostic setting sending only <code>SignInLogs</code>/<code>AuditLogs</code> to that workspace. It uses the <a href="https://github.com/Azure/azure-rest-api-specs/blob/main/specification/azureactivedirectory/resource-manager/Microsoft.Aadiam/AzureActiveDirectory/stable/2017-04-01/azureactivedirectory.json">published AadIam REST configuration API</a>, not a Graph log-download substitute.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> actual test events appear in Entra; if export is enabled, the same app events appear in the workspace.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>Collections organize apps already assigned to users; they do not grant access. Sign-in logs record identity-platform decisions, audit logs record configuration changes, provisioning logs record target-account changes. The app's own 403 can coexist with a successful Entra sign-in.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/access-panel-collections">App launchers/collections</a><a href="https://learn.microsoft.com/en-us/entra/identity/monitoring-health/howto-configure-diagnostic-settings">Diagnostic export</a></p></details>
@@ -476,23 +1495,38 @@ New-LabLogExport -SubscriptionId (Read-Host 'Lab Azure subscription GUID') -Loca
 <div class="configuration"><h3>Technical configuration</h3>
 <ol class="steps">
 <li>Place the sample downloads from Start here in one folder, or clone the dashboard repository and enter <code>labs\app-access-sample</code>. Verify <code>node --version</code> is 22 or newer.</li>
-<li>For portal-created resources, run the environment block below using tenant ID, client ID and secret <strong>Value</strong> from 07. For automation-created resources, run <code>Use-LabClient</code> in the initialized terminal instead; both set the same three process environment variables.</li>
+<li>For portal-created or direct-route resources, use the left-hand environment/run block with the core IDs and secret <strong>Value</strong> from 07. For helper-created resources, use the right-hand <code>Use-LabClient</code> block in its initialized terminal. Both set the same three process environment variables.</li>
 <li>From the sample folder, run <code>npm ci</code> then <code>npm test</code>. Continue only after success; run <code>npm start</code>.</li>
 <li>Open exactly <code>http://localhost:4300</code>. Before signing in, open <code>/protected</code> and <code>/profile</code>; verify both return <strong>HTTP 401</strong>.</li>
 <li>Keep the server running for 14. Use <code>/logout</code> to clear an app session between tests; stop the server with Ctrl+C after testing.</li>
 </ol>
-<h4>Environment &mdash; portal-created app only</h4>
-<pre data-file="13-set-environment.ps1"><code>
-$env:TENANT_ID = Read-Host 'Lab tenant GUID'
-$env:CLIENT_ID = Read-Host 'Web application CLIENT ID'
-$secret = Read-Host 'Temporary client secret VALUE' -AsSecureString
-$env:CLIENT_SECRET = [System.Net.NetworkCredential]::new('', $secret).Password
-Remove-Variable secret</code></pre>
-<h4>Start &mdash; both creation routes</h4>
-<pre data-file="13-run-sample.ps1"><code>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="shared" data-track="direct"><summary>Explicit commands &mdash; no helper required</summary><p>Run the blocks in order for the selected branch. All inputs, requests and payloads are explicit. This local runtime block needs no Graph connection. No custom functions, dot-sourcing or helper initialization is used. Keep printed <code>path/identity</code> records in local notes for cleanup, never secrets. Do not rerun creation blocks after a partial failure.</p><h5>Set the three environment variables and run the sample</h5><p>Use the core client ID/secret from 07, not the consent/API/daemon client. Run from the sample folder; this requires no Graph sign-in.</p><pre data-file="13-direct-runtime.ps1" data-scope="core"><code>$env:TENANT_ID=([guid](Read-Host 'Lab tenant GUID')).ToString()
+$env:CLIENT_ID=([guid](Read-Host 'Core Web CLIENT GUID')).ToString()
+$secure=Read-Host 'Core one-day secret VALUE' -AsSecureString
+$env:CLIENT_SECRET=[System.Net.NetworkCredential]::new('', $secure).Password
+$NodeMajor=[int]((node --version).TrimStart('v').Split('.')[0])
+if ($NodeMajor -lt 22) { throw 'Node.js 22+ required.' }
 npm ci
+if ($LASTEXITCODE) { throw 'Dependency installation failed.' }
 npm test
-npm start</code></pre>
+if ($LASTEXITCODE) { throw 'Sample tests failed.' }
+npm start</code></pre></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
+<details class="automation" data-parity="shared"><summary>Helper route &mdash; set the core environment and run</summary><p><strong>Result:</strong> the same local runtime/environment. <strong>Shared:</strong> source downloads and browser checks; first load/initialize the helper as shown in 00.</p><pre data-file="13-helper-runtime.ps1"><code>Use-LabClient
+npm ci
+if ($LASTEXITCODE) { throw 'Dependency installation failed.' }
+npm test
+if ($LASTEXITCODE) { throw 'Sample tests failed.' }
+npm start</code></pre></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> startup reports <code>http://localhost:4300</code>; anonymous protected routes return 401.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>The server uses tenant-specific OIDC code/PKCE, state/nonce and ID-token signature checks. It keeps tokens/secret server-side and enforces Reader at both protected routes. Sessions last at most 15 minutes or token expiry; local logout does not clear Microsoft's SSO session.</p><p>This is static documentation on GitHub Pages; the Node app runs locally, not on Pages. Its loopback HTTP cookie/temporary secret are not production hosting. Tests include mocked provider responses and locally signed JWTs, not real tenant sign-ins.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow">Code/PKCE</a><a href="https://github.com/panva/openid-client">OIDC library</a></p></details>
@@ -518,6 +1552,84 @@ npm start</code></pre>
 <li>Under <strong>Grant</strong>, select <strong>Grant access &gt; Require multifactor authentication</strong>. Set <strong>Enable policy: Report-only</strong>; create.</li>
 <li>Perform a new sign-in; inspect its <strong>Conditional Access &gt; Report-only</strong> result. Set the policy to <strong>On</strong> only after both test users have registered MFA; retest, then disable/delete the lab policy.</li>
 </ol>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="shared" data-track="direct"><summary>Explicit commands &mdash; no helper required</summary><p>Run the blocks in order for the selected branch. All inputs, requests and payloads are explicit. Microsoft sign-in/installed cmdlets are still required. No custom functions, dot-sourcing or helper initialization is used. Keep printed <code>path/identity</code> records in local notes for cleanup, never secrets. Do not rerun creation blocks after a partial failure.</p><h5>Create/remove Observer, then revoke direct/group Reader access</h5><p>Shared: perform real browser tests at each pause. Mark deleted records removed. Group revocation deletes only the membership reference, never the user.</p><pre data-file="14-direct-comparison.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','AppRoleAssignment.ReadWrite.All','Group.ReadWrite.All','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$AppObjectId=[guid](Read-Host 'Web registration OBJECT GUID')
+$app=Invoke-MgGraphRequest -Method GET -Uri "$Graph/applications/$AppObjectId" -OutputType Hashtable
+if ($app.displayName -ne 'APP-ACCESS-LAB-Web') { throw 'Wrong registration.' }
+$SpId=[guid](Read-Host 'Web enterprise app SP GUID')
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$SpId" -OutputType Hashtable
+if ($sp.appId -ne $app.appId) { throw 'SP does not match this registration.' }
+$DeniedId=[guid](Read-Host 'Denied USER object GUID')
+curl.exe -i http://localhost:4300/protected
+Read-Host 'Verify allowed=200 and unassigned denied sign-in rejection; press Enter' | Out-Null
+$sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)" -OutputType Hashtable
+$selected=@($sp['appRoles'] | Where-Object { $null -ne $_ -and $_.value -eq 'Lab.Observer' -and $_.isEnabled })
+if ($selected.Count -ne 1) { throw 'Role not propagated. Retry only the assignment after inspection.' }
+$body=@{principalId=$DeniedId.ToString();resourceId=$sp.id;appRoleId=$selected[0].id}
+$assignment=Invoke-MgGraphRequest -Method POST -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/servicePrincipals/$($sp.id)/appRoleAssignedTo/$($assignment.id)";identity=@{principalId=$DeniedId.ToString();appRoleId=$selected[0].id}} | ConvertTo-Json -Compress
+Read-Host 'Clear denied session, verify both protected routes=403; press Enter' | Out-Null
+Invoke-MgGraphRequest -Method DELETE -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo/$($assignment.id)" | Out-Null
+Write-Host 'Observer assignment removed; remove its cleanup record.'
+$AllowedId=[guid](Read-Host 'Allowed USER object GUID')
+$route=Read-Host 'Reader route: type direct or group'
+if ($route -eq 'group') {
+    $GroupId=[guid](Read-Host 'Recorded Readers GROUP GUID')
+    $group=Invoke-MgGraphRequest -Method GET -Uri "$Graph/groups/$GroupId" -OutputType Hashtable
+    if ($group.displayName -ne 'APP-ACCESS-LAB-Readers') { throw 'Wrong group.' }
+    Invoke-MgGraphRequest -Method DELETE -Uri "$Graph/groups/$GroupId/members/$AllowedId/`$ref" | Out-Null
+} elseif ($route -eq 'direct') {
+    $sp=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)" -OutputType Hashtable
+    $reader=@($sp.appRoles | Where-Object value -eq 'Lab.Reader')
+    if ($reader.Count -ne 1) { throw 'Ambiguous Reader role.' }
+    $assigned=Invoke-MgGraphRequest -Method GET -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo" -OutputType Hashtable
+    $direct=@($assigned.value | Where-Object { $_.principalId -eq $AllowedId.ToString() -and $_.appRoleId -eq $reader[0].id })
+    if ($direct.Count -ne 1) { throw 'Resolve the exact direct Reader assignment.' }
+    Invoke-MgGraphRequest -Method DELETE -Uri "$Graph/servicePrincipals/$($sp.id)/appRoleAssignedTo/$($direct[0].id)" | Out-Null
+    Write-Host 'Direct Reader assignment removed; update cleanup records.'
+} else { throw 'Choose direct or group.' }
+Read-Host 'Observe existing allowed session, then logout/fresh sign-in denial; press Enter' | Out-Null</code></pre>
+<h5>POST the report-only MFA policy, then optionally test enforcement</h5><p>P1/P2 only. Restore Reader before an MFA success test. The policy is initially report-only; the optional enforcement/deletion is paused for the same shared browser/MFA checks.</p><pre data-file="14-direct-mfa.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Policy.ReadWrite.ConditionalAccess','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$AllowedId=[guid](Read-Host 'Allowed USER object GUID')
+$DeniedId=[guid](Read-Host 'Denied USER object GUID')
+$ClientId=[guid](Read-Host 'Core Web CLIENT GUID')
+$EmergencyIds=@((Read-Host 'Emergency administrator USER GUIDs, comma-separated') -split ',' | ForEach-Object { ([guid]$_.Trim()).ToString() })
+$body=@{displayName='APP-ACCESS-LAB-MFA';state='enabledForReportingButNotEnforced'
+    conditions=@{users=@{includeUsers=@($AllowedId.ToString(),$DeniedId.ToString());excludeUsers=$EmergencyIds}
+        applications=@{includeApplications=@($ClientId.ToString())};clientAppTypes=@('all')}
+    grantControls=@{operator='OR';builtInControls=@('mfa')}}
+$policy=Invoke-MgGraphRequest -Method POST -Uri "$Graph/identity/conditionalAccess/policies" -Body ($body | ConvertTo-Json -Depth 30) -ContentType 'application/json' -OutputType Hashtable
+@{path="/identity/conditionalAccess/policies/$($policy.id)";identity=@{displayName=$policy.displayName}} | ConvertTo-Json -Compress
+Read-Host 'Inspect the real Report-only result; press Enter' | Out-Null
+$choice=Read-Host 'Optional enforced test: type MFA-REGISTERED only after BOTH users register MFA; otherwise type SKIP'
+if ($choice -ceq 'MFA-REGISTERED') {
+    Invoke-MgGraphRequest -Method PATCH -Uri "$Graph/identity/conditionalAccess/policies/$($policy.id)" -Body (@{state='enabled'} | ConvertTo-Json -Depth 30) -ContentType 'application/json' | Out-Null
+    Read-Host 'Run fresh browser MFA tests; press Enter to delete this policy' | Out-Null
+    Invoke-MgGraphRequest -Method DELETE -Uri "$Graph/identity/conditionalAccess/policies/$($policy.id)" | Out-Null
+    Write-Host 'Policy removed; remove its cleanup record.'
+} elseif ($choice -cne 'SKIP') { throw 'Choose MFA-REGISTERED or SKIP.' }</code></pre></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="shared"><summary>Hybrid route &mdash; reproduce Observer/revocation states and the optional MFA policy</summary>
 <p><strong>Shared:</strong> use real isolated browser profiles for each authentication/HTTP comparison. At each pause, inspect Developer Tools &gt; Network for protected/profile results. The configuration writes below replace the assignment dialogs; they do not bypass MFA or simulate tenant sign-in.</p>
 <pre data-file="14-comparison.ps1"><code>curl.exe -i http://localhost:4300/protected
@@ -542,6 +1654,10 @@ Send-LabGraph PATCH "/identity/conditionalAccess/policies/$MfaPolicyId" @{state=
 Read-Host 'Run fresh browser MFA tests; press Enter to delete this lab policy' | Out-Null
 Remove-LabRecordedObject -Path "/identity/conditionalAccess/policies/$MfaPolicyId"</code></pre>
 <p>Restore allowed's Reader assignment/membership first if the earlier revocation test removed it; otherwise assignment denial prevents an MFA success test. No password/ROPC sign-in automation is offered.</p></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> complete the five-row comparison using actual users and HTTP results, not just assignment screenshots.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary><p>The unassigned-user test proves the Entra assignment gate. The Observer 403 proves server-side role authorization. Removing a role does not rewrite an existing token/session; fresh sign-in separates revocation from caching. MFA/Conditional Access denial is not the same as assignment denial.</p><p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/what-is-access-management">Assignment gate</a><a href="https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-conditional-access-report-only">Report-only CA</a></p></details>
@@ -560,6 +1676,52 @@ Remove-LabRecordedObject -Path "/identity/conditionalAccess/policies/$MfaPolicyI
 <li>Delete <code>APP-ACCESS-LAB-Logs</code> under Entra diagnostic settings. In Azure &gt; <strong>Resource groups &gt; rg-app-access-lab</strong>, verify it contains only this lab's resources, then delete that specific resource group if you created it exclusively for this exercise.</li>
 <li>Remove the two test users and lab-only groups if no longer needed. Verify app/SP IDs are absent and baseline tenant settings are restored.</li>
 </ol>
+<!-- automation-tracks:start -->
+<div class="automation-grid">
+<div class="automation-track" data-track="direct"><h4>Write it step by step</h4>
+<details class="automation" data-parity="shared" data-track="direct"><summary>Explicit commands &mdash; no helper required</summary><p>Run the blocks in order for the selected branch. All inputs, requests and payloads are explicit. Microsoft sign-in/installed cmdlets are still required. No custom functions, dot-sourcing or helper initialization is used. Keep printed <code>path/identity</code> records in local notes for cleanup, never secrets. Do not rerun creation blocks after a partial failure.</p><h5>Verify and DELETE only your recorded created objects</h5><p>Shared first: stop the sample/provisioning and remove vendor policies/accounts/collection and second-tenant SP. If 06 changed consent settings, run its direct baseline-restore block first. Paste only remaining records from this direct route in creation order; exclude already deleted assignments/policies. Do not use the helper's state.</p><pre data-file="15-direct-graph-cleanup.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$AdminId=[guid](Read-Host 'Administrator USER object GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.ReadWrite.All','User.ReadWrite.All','Group.ReadWrite.All','AppRoleAssignment.ReadWrite.All','DelegatedPermissionGrant.ReadWrite.All','RoleManagement.ReadWrite.Directory','Policy.ReadWrite.ConditionalAccess','Policy.ReadWrite.ApplicationConfiguration','User.Read' -ContextScope Process -NoWelcome
+if ((Get-MgContext).TenantId -ne $TenantId.ToString()) { throw 'Wrong tenant.' }
+$Graph='https://graph.microsoft.com/v1.0'
+$me=Invoke-MgGraphRequest -Method GET -Uri "$Graph/me?`$select=id" -OutputType Hashtable
+if ($me.id -ne $AdminId.ToString()) { throw 'Wrong administrator.' }
+if ((Read-Host 'Type APP-ACCESS-LAB to authorize lab writes') -cne 'APP-ACCESS-LAB') { throw 'Writes not confirmed.' }
+$records=@((Read-Host 'Paste remaining CREATED object records as one JSON array') | ConvertFrom-Json -AsHashtable)
+if ((Read-Host 'Type the lab tenant GUID to confirm recorded-object deletion') -cne $TenantId.ToString()) { throw 'Cleanup not confirmed.' }
+[array]::Reverse($records)
+foreach ($record in $records) {
+    if ($record.path -notmatch '^/(applications|servicePrincipals|users|groups|oauth2PermissionGrants|policies/claimsMappingPolicies|identity/conditionalAccess/policies|roleManagement/directory/roleDefinitions|roleManagement/directory/roleAssignments)/[A-Za-z0-9_/=+-]+$' -or -not $record.identity.Count) { throw 'Invalid recorded object path/identity.' }
+    $actual=Invoke-MgGraphRequest -Method GET -Uri "$Graph$($record.path)" -OutputType Hashtable
+    foreach ($key in $record.identity.Keys) {
+        if ($actual[$key] -ne $record.identity[$key]) { throw "Object identity changed: $($record.path)" }
+    }
+    Invoke-MgGraphRequest -Method DELETE -Uri "$Graph$($record.path)" | Out-Null
+    Write-Host "Deleted $($record.path); remove this record from your local list."
+}
+if (Test-Path Env:CLIENT_SECRET) { Remove-Item Env:CLIENT_SECRET }
+Disconnect-MgGraph</code></pre>
+<h5>Verify the diagnostic destination and lab-only group, then delete</h5><p>Only run for Azure resources created by the direct route. Complete the same shared connector/group/host/AD cleanup afterward.</p><pre data-file="15-direct-azure-cleanup.ps1" data-scope="extension"><code>$ErrorActionPreference='Stop'
+$TenantId=[guid](Read-Host 'Lab tenant GUID')
+$SubscriptionId=[guid](Read-Host 'Recorded Azure subscription GUID')
+$WorkspaceId=Read-Host 'Recorded workspace RESOURCE ID'
+Connect-AzAccount -Tenant $TenantId -Subscription $SubscriptionId | Out-Null
+$context=Get-AzContext
+if ($context.Tenant.Id -ne $TenantId.ToString() -or $context.Subscription.Id -ne $SubscriptionId.ToString()) { throw 'Wrong Azure context.' }
+$resources=@(Get-AzResource -ResourceGroupName 'rg-app-access-lab')
+if (@($resources | Where-Object { $_.ResourceId -ne $WorkspaceId }).Count) { throw 'Other resources use this group; do not delete.' }
+$settings=Invoke-AzRestMethod -Method GET -Path '/providers/microsoft.aadiam/diagnosticSettings?api-version=2017-04-01'
+if ($settings.StatusCode -ne 200) { throw 'Cannot inspect diagnostic settings.' }
+$matching=@(($settings.Content | ConvertFrom-Json -AsHashtable).value | Where-Object name -eq 'APP-ACCESS-LAB-Logs')
+if ($matching.Count -ne 1 -or $matching[0].properties.workspaceId -ne $WorkspaceId) { throw 'Recorded diagnostic destination does not match.' }
+if ((Read-Host 'Type rg-app-access-lab to delete this recorded group/export') -cne 'rg-app-access-lab') { throw 'Cleanup not confirmed.' }
+$response=Invoke-AzRestMethod -Method DELETE -Path '/providers/microsoft.aadiam/diagnosticSettings/APP-ACCESS-LAB-Logs?api-version=2017-04-01'
+if ($response.StatusCode -notin @(200,204)) { throw 'Diagnostic delete failed.' }
+Remove-AzResourceGroup -Name 'rg-app-access-lab' -Force | Out-Null</code></pre></details>
+</div>
+<div class="automation-track" data-track="helper"><h4>Use automation.ps1</h4>
+<!-- helper-track:start -->
 <details class="automation" data-parity="shared"><summary>Hybrid cleanup &mdash; delete recorded Graph/Azure resources, finish shared cleanup</summary>
 <p><strong>Shared first:</strong> stop the sample and provisioning job, remove lab-only vendor accounts/policies/collection and second-tenant SP. These are not recorded by the home-tenant helper. Do not first delete its recorded Graph objects through the portal.</p>
 <pre data-file="15-cleanup.ps1"><code>Remove-LabAutomation
@@ -570,6 +1732,10 @@ Disconnect-MgGraph</code></pre>
 <p><strong>Shared afterward:</strong> remove the recorded proxy connector group/connector only when unused, uninstall the lab connector, revert lab AD changes and verify all baselines/resources. The helper retains its hidden audit/state file; start a new exercise in a fresh folder rather than rerunning creation commands.</p>
 <p><strong>Older combined Setup users only:</strong> <a href="app-access-sample/tenant.ps1" download>tenant.ps1</a> remains compatible with its separate <code>app-access-lab.json</code>; its cleanup is not interchangeable with the new helper:</p>
 <pre data-file="15-legacy-cleanup.ps1"><code>.\tenant.ps1 -Action Cleanup -TenantId $TenantId -ExpectedAdminId (Read-Host 'Administrator USER object GUID')</code></pre></details>
+<!-- helper-track:end -->
+</div>
+</div>
+<!-- automation-tracks:end -->
 <div class="callout check"><strong>Verify:</strong> core/extension app/SPs, credentials and lab-only policies/resources are absent, including shared vendor/infrastructure cleanup.</div>
 </div>
 <details class="knowledge"><summary>Knowledge &amp; context</summary>
