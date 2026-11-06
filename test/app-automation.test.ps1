@@ -279,6 +279,6 @@ try {
     Write-Output 'Offline automation contracts passed (mocked Graph/Azure; no tenant requests).'
 } finally {
     Set-Location -LiteralPath $previous
-    Get-ChildItem -LiteralPath $temporary -File -Force | ForEach-Object { Remove-Item -LiteralPath $_.FullName }
+    Get-ChildItem -LiteralPath $temporary -File -Force | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force }
     Remove-Item -LiteralPath $temporary
 }
