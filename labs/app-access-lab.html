@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="A step-by-step Entra application access field lab covering all four Microsoft Learn modules, tenant prerequisites, portal and automation routes, and allowed-versus-denied users.">
+<title>Microsoft Entra apps | Access implementation field lab</title>
+<link rel="stylesheet" href="../assets/app-lab.css">
+<script src="../assets/app-lab.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to lab content</a>
+<div class="layout">
+<aside class="sidebar">
+  <div class="brand"><small>Microsoft Entra / field lab</small>Access management for apps</div>
+  <label for="search" class="small">Find a topic</label><input id="search" type="search" placeholder="Search steps, prerequisites, APIs...">
+  <p class="progress-label" id="progress-label">0 modules complete</p><progress id="progress" value="0" max="16" aria-label="Lab reading progress"></progress>
+  <nav id="nav" aria-label="Lab modules"></nav>
+  <div class="tools"><button id="theme" type="button">Light / dark</button><button id="expand" type="button">Expand details</button><button id="print" type="button">Print / PDF</button><button id="export" type="button">Export progress</button><button id="reset" type="button">Reset local progress</button></div>
+  <p class="privacy">Progress and notes stay in this browser. Do not paste passwords, secrets, tokens, production identities or customer data. These controls never change your tenant.</p>
+  <p><a href="../labs/">Back to Labs</a></p>
+</aside>
+<main id="main">
+<header class="hero">
+  <div class="eyebrow">Plan / integrate / register / prove access</div>
+  <h1>Application access,<br>from design to a real boundary.</h1>
+  <p>Build a single-tenant web application, assign one test account and withhold access from another. Then explain the difference between sign-in, app assignment, app roles, API permissions, consent and provisioning.</p>
+  <div class="chips"><span class="chip">4 Learn modules mapped</span><span class="chip">16 field modules</span><span class="chip">Portal + Microsoft Graph</span><span class="chip">OIDC + PKCE capstone</span></div>
+</header>
+<section class="intro" aria-labelledby="scope-heading">
+<h2 id="scope-heading">How to use this lab</h2>
+<p>This is independently authored material covering the topics in <a href="https://learn.microsoft.com/en-gb/training/paths/implement-access-management-for-apps/">Implement access management for apps</a>, checked 6 November 2026. It does not reproduce the Microsoft training lessons or assessment questions.</p>
+<p>Use a disposable tenant and fictitious identities. The core web-app capstone needs no paid Azure resource. Full execution of the discovery, custom-role, group, proxy, provisioning, collections and governance branches requires the additional licenses and systems below. Read every branch; record <strong>not run + missing prerequisite</strong> if a gate is unavailable, rather than claiming completion.</p>
+<div class="table-wrap"><table><thead><tr><th>Learn module / substantive units</th><th>Field modules</th></tr></thead><tbody>
+<tr><td><a href="https://learn.microsoft.com/en-us/training/modules/plan-design-integration-of-enterprise-apps-for-sso/">Plan and design enterprise-app SSO</a>: discovery / AD FS report, connectors, access design, app-management roles, custom credential-management role, gallery SaaS, OAuth app policies</td><td>00-03, 11</td></tr>
+<tr><td><a href="https://learn.microsoft.com/en-us/training/modules/implement-monitor-integration-of-enterprise-apps-for-sso/">Implement and monitor enterprise-app SSO</a>: token customization, consent, application proxy, custom SaaS, provisioning, sign-in / audit logs, application collections</td><td>03-06, 12</td></tr>
+<tr><td><a href="https://learn.microsoft.com/en-us/training/modules/implement-app-registration/">Implement app registration</a>: LOB strategy, registration, API permissions, tenant consent, authorization, app-role tokens, app governance</td><td>07-09, 11, 13-14</td></tr>
+<tr><td><a href="https://learn.microsoft.com/en-us/training/modules/register-apps-use-microsoft-entra-id/">Register apps using Entra ID</a>: single / multitenant, application versus service principal, registration settings, authentication, API permissions, roles; description also discusses SPA registration</td><td>07-10, 13-14</td></tr>
+</tbody></table></div>
+<p>Introductions, summaries and knowledge checks are represented by the checkpoints and final explanation questions; use the linked Learn assessments for their official questions.</p>
+<div class="callout warning"><strong>Execution boundary:</strong> this page is static documentation. The sample and scripts are downloadable source, not hosted authentication services. Do not run tenant automation against your production directory. Portal labels and license entitlements can change; verify the linked documentation before executing.</div>
+<p><strong>Download the capstone files:</strong> <a href="app-access-sample/package.json" download>package.json</a>, <a href="app-access-sample/package-lock.json" download>package-lock.json</a>, <a href="app-access-sample/server.mjs" download>server.mjs</a>, <a href="app-access-sample/authorization.mjs" download>authorization.mjs</a>, <a href="app-access-sample/server.test.mjs" download>tests</a>, <a href="app-access-sample/tenant.ps1" download>tenant.ps1</a>. Keep them in one local folder. Alternatively clone the dashboard repository and use its sample directory.</p>
+</section>
+
+<section class="module" id="a00" data-title="00 / Tenant, accounts, licenses and settings">
+<div class="module-head"><div><div class="number">Module 00 / prerequisites</div><h2>Prepare a lab tenant and two clean users</h2><div class="meta">Actor: lab administrator / 30 minutes</div></div><label class="done"><input type="checkbox" data-complete="a00"> Complete</label></div>
+<div class="table-wrap"><table><thead><tr><th>Branch</th><th>Required prerequisites and settings</th></tr></thead><tbody>
+<tr><td>Core registration, direct assignment, app-role capstone</td><td>Entra workforce tenant; tenant ID; two enabled, cloud-only member accounts; Application Administrator or Cloud Application Administrator for app management; authorized administrator consent for Graph User.Read; a separate User Administrator to create accounts if needed; Node.js 22+, npm, modern browser and outbound HTTPS to Microsoft identity / Graph endpoints. No Microsoft 365 mailbox is needed for /me.</td></tr>
+<tr><td>Graph automation</td><td>PowerShell 7; Microsoft.Graph.Authentication module; delegated Application.ReadWrite.All, AppRoleAssignment.ReadWrite.All, DelegatedPermissionGrant.ReadWrite.All and User.Read.All for setup. Scope consent does not replace the operator's Entra role. Inspect uses read scopes. Privileged Role Administrator is needed for custom directory-role assignments; extra scopes appear alongside advanced snippets.</td></tr>
+<tr><td>Group assignment, custom directory roles, application collections, Conditional Access</td><td>Entra ID P1 or P2 entitlements for the users/features exercised. Use a direct user assignment for the baseline. Group assignment ignores nested groups. For Conditional Access, register MFA methods for test users and exclude emergency administrators from any new policy.</td></tr>
+<tr><td>Application proxy / private network connector</td><td>Entra ID P1/P2; Application Administrator; supported Windows Server host (check current connector requirements, Windows Server 2016 or later), local install rights, TLS 1.2, DNS and permitted outbound 80/443 to documented service endpoints; internal test web application reachable from the connector. Kerberos SSO additionally needs AD DS, domain-joined connector, SPNs and constrained delegation. No inbound internet port opening.</td></tr>
+<tr><td>SAML / provisioning</td><td>Owned test SaaS tenant or Entra SAML Toolkit test account; vendor Entity ID, ACS URL, attribute contract and admin rights. For SCIM, an owned reachable SCIM endpoint, secret token and documented mappings; Entra provisioning entitlements and vendor provisioning license. Gallery provisioning and the general SCIM service can have different licensing requirements; check the specific integration tutorial.</td></tr>
+<tr><td>Discovery, app connectors, OAuth policies, app governance</td><td>Defender for Cloud Apps entitlement/trial, appropriate Defender role, supported region, license and connector-specific admin account. App governance must be enabled and can take up to 10 hours to appear; its current region restrictions are in the linked prerequisites. Microsoft 365 connector adds app activity visibility.</td></tr>
+<tr><td>AD FS migration/activity report</td><td>Actual lab AD FS relying-party apps; Entra P1/P2; Entra Connect installed on-premises alongside Entra Connect Health AD FS agents; Application/Cloud Application Administrator for migration, or a supported report/global reader for inspection. The dashboard includes apps with user sign-ins within the last 30 days and omits Microsoft relying parties.</td></tr>
+<tr><td>Multitenant / SPA / multi-tier extension</td><td>A second disposable workforce tenant and its consenting administrator for multitenant testing; local frontend tooling for SPA; owned API with JWT validation middleware for the delegated API / OBO extension. The supplied server is deliberately single-tenant and is not that API.</td></tr>
+<tr><td>Logs / KQL</td><td>Reports Reader / Security Reader or sufficient reporting role; AuditLog.Read.All for Graph export. For KQL, Azure subscription, Log Analytics workspace, authorized diagnostic-setting operator, appropriate log/license entitlement and ingestion budget. Native portal logs do not require a workspace.</td></tr>
+</tbody></table></div>
+<ol class="steps">
+<li>In Entra admin center, confirm the tenant name, primary <code>onmicrosoft.com</code> domain and <strong>Tenant ID</strong>. Write a lab inventory using object IDs, not just display names. Maintain an emergency administrator outside every lab assignment.</li>
+<li>Create <code>lab-app-allowed</code> and <code>lab-app-denied</code> as enabled member users in this tenant. Use unique temporary passwords delivered securely; sign in once as each and change the password if required. Never put passwords in screenshots, code or browser notes.</li>
+<li>Inspect their direct and group-derived directory roles: neither test user may be an administrator, app owner or member of a broadly assigned app group. Global Administrators can bypass some app-assignment restrictions and are unsuitable denied-user controls.</li>
+<li>Use different browser profiles for the two accounts. Register any required authentication methods. Existing Security Defaults and Conditional Access may require MFA; do not disable tenant-wide protections just to make the test pass.</li>
+<li>Under <strong>Users &gt; User settings &gt; App registrations</strong>, record whether users may register apps. Keep it disabled if that is your baseline; the lab app administrator can create the registration. Record tenant user-consent settings before changes. Consent restrictions, assignment, and login blocking are different settings.</li>
+<li>Verify the lab accounts' licenses for each advanced feature you will run. Prepare a secure local evidence folder for IDs, screenshots and redacted results. Allocate 4-6 hours for the core path; provisioning/proxy/governance can take substantially longer.</li>
+</ol>
+<h3>Automation / authenticate explicitly</h3>
+<pre data-file="00-connect.ps1"><code># Install once; use PowerShell 7, not AzureAD/MSOnline modules.
+Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
+$TenantId = [guid](Read-Host 'Disposable tenant GUID')
+Connect-MgGraph -TenantId $TenantId -Scopes 'Application.Read.All','User.Read.All' -ContextScope Process
+Get-MgContext | Select-Object TenantId,Account,Scopes
+# Confirm both user object IDs in the portal. Do not use an admin as either test user.</code></pre>
+<div class="callout check"><strong>Checkpoint:</strong> list every prerequisite you actually have. Both test accounts must authenticate to the tenant before testing access to the app.</div>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/assign-user-or-group-access-portal">Assignment and license requirements</a><a href="https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/custom-available-permissions">Custom-role licensing</a><a href="https://learn.microsoft.com/en-us/defender-cloud-apps/app-governance-get-started">App governance prerequisites</a></p>
+</section>
+
+<section class="module" id="a01" data-title="01 / Discover apps and configure connectors">
+<div class="module-head"><div><div class="number">Module 01 / discover before integrating</div><h2>Inventory apps, AD FS dependencies and connectors</h2></div><label class="done"><input type="checkbox" data-complete="a01"> Complete</label></div>
+<ol class="steps">
+<li>Create an inventory with app owner, hosting location, business function, identities, existing authentication, user count, data sensitivity, vendor license, provisioning support and rollback owner. Include one gallery SaaS, one custom OIDC app and one internal web app.</li>
+<li>In <strong>Defender portal &gt; Cloud apps &gt; Cloud discovery</strong>, review discovered apps and filter a test application. Compare activity, risk, compliance and user/device evidence. If no discovery source exists, configure a snapshot report using a supported firewall/proxy log from your own lab; map the log format correctly before import. Do not upload customer traffic.</li>
+<li>For AD FS, verify Connect/Health agents and P1/P2, generate a test relying-party sign-in, then open <strong>Enterprise apps &gt; Usage &amp; insights &gt; AD FS application migration</strong>. Inspect activity, relying parties and readiness tests. Check claim rules, signing/encryption certificates, WIA, custom transformations and non-browser clients. A low-use app is a migration candidate, not automatic proof of compatibility. No AD FS deployment means this branch is not executed.</li>
+<li>Under <strong>Cloud apps &gt; App connectors</strong>, select a supported service you own, review its permission prerequisites, connect using its dedicated admin credentials and confirm status/activity ingestion. Defender app connectors provide API-based visibility/control; they do not register your OIDC client or install application proxy.</li>
+<li>Rank one app for migration. Record which identity, assignment and provisioning data will be retained, what the rollback switch is, and who owns the target app account.</li>
+</ol>
+<h3>Automation / discovery inventory versus telemetry</h3>
+<pre data-file="01-inventory.ps1"><code># Inventory objects already registered in Entra; this is NOT shadow-IT discovery.
+$next = 'https://graph.microsoft.com/v1.0/servicePrincipals?$select=id,appId,displayName,preferredSingleSignOnMode,appRoleAssignmentRequired'
+while ($next) {
+    if (-not $next.StartsWith('https://graph.microsoft.com/v1.0/')) { throw 'Unexpected paging host.' }
+    $page = Invoke-MgGraphRequest -Method GET -Uri $next
+    $page.value | Select-Object id,appId,displayName,preferredSingleSignOnMode,appRoleAssignmentRequired
+    $next = $page.'@odata.nextLink'
+}</code></pre>
+<p>For automated Cloud Discovery use the documented Defender discovery-log ingestion method for your data source; for AD FS use its documented report tooling. Do not equate Graph service-principal inventory with network discovery or claim that Graph can create every Defender connector.</p>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/defender-cloud-apps/set-up-cloud-discovery">Cloud discovery setup</a><a href="https://learn.microsoft.com/en-us/defender-cloud-apps/connect-apps">Defender app connectors</a><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/migrate-ad-fs-application-howto">AD FS app migration</a></p>
+</section>
+
+<section class="module" id="a02" data-title="02 / SSO design and delegated app administration">
+<div class="module-head"><div><div class="number">Module 02 / least privilege</div><h2>Choose SSO and delegate application management</h2></div><label class="done"><input type="checkbox" data-complete="a02"> Complete</label></div>
+<div class="table-wrap"><table><thead><tr><th>Approach</th><th>When to choose it / boundary</th></tr></thead><tbody>
+<tr><td>OIDC / OAuth 2.0</td><td>Modern custom apps; authorization code + PKCE. ID token establishes a login; access token is for a specific API. Neither implies an app role unless assigned and emitted.</td></tr>
+<tr><td>SAML</td><td>Vendor accepts signed SAML assertions at its ACS endpoint. Map the NameID/attributes it actually expects; manage certificate rollover.</td></tr>
+<tr><td>Password-based / linked</td><td>Password vault/injection for supported legacy apps versus a launch link with authentication managed elsewhere. Linked SSO alone is not an Entra authentication/authorization boundary.</td></tr>
+<tr><td>Application proxy</td><td>Expose an internal app with Entra preauthentication and optional backend SSO. Network publication, preauthentication and backend authorization must be tested separately.</td></tr>
+</tbody></table></div>
+<ol class="steps">
+<li>For each inventory item record protocol, exact redirect/ACS URLs, logout behavior, vendor roles, required attributes, app owner and provisioning/deprovisioning design. Choose OIDC for the local capstone and SAML for the gallery branch.</li>
+<li>Assign the app operator an appropriate app-management role, not Global Administrator. Application Administrator / Cloud Application Administrator can manage apps; consent for Microsoft Graph <em>application</em> permissions requires a suitably privileged role, such as Privileged Role Administrator, and a separate review.</li>
+<li>With P1 and an authorized role administrator, open <strong>Roles &amp; admins &gt; New custom role</strong>. Create <code>APP-ACCESS-LAB Credential Editor</code> containing <code>microsoft.directory/applications/credentials/update</code>. This is a <em>directory administration role</em>, not the <code>Lab.Reader</code> application role.</li>
+<li>Assign it to a separate non-admin <code>lab-app-editor</code> at the scope of a disposable app registration, not the directory root. Do not make this test editor an app owner; ownership would mask the role test. Verify that it can manage credentials for the scoped app but not an unrelated app you own.</li>
+<li>For a lower-risk companion role, use basic app-property update instead of credential update. Credential management can allow impersonation of the app; never grant it broadly or exercise it against a privileged app.</li>
+</ol>
+<h3>Automation / custom role and app-scoped assignment</h3>
+<pre data-file="02-custom-role.ps1"><code># P1 + Privileged Role Administrator, delegated RoleManagement.ReadWrite.Directory.
+# Authenticate to the exact lab tenant with that scope before running.
+$AppObjectId = [guid](Read-Host 'Disposable app OBJECT ID, not client ID')
+$EditorId = [guid](Read-Host 'Non-admin lab editor user object ID')
+$roleBody = @{
+    displayName='APP-ACCESS-LAB Credential Editor'; isEnabled=$true
+    rolePermissions=@(@{allowedResourceActions=@('microsoft.directory/applications/credentials/update')})
+}
+$role = Invoke-MgGraphRequest -Method POST -Uri 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleDefinitions' -Body ($roleBody | ConvertTo-Json -Depth 8) -ContentType 'application/json'
+$assignment = @{
+    principalId=$EditorId.ToString();roleDefinitionId=$role.id;directoryScopeId="/$AppObjectId"
+}
+Invoke-MgGraphRequest -Method POST -Uri 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments' -Body ($assignment | ConvertTo-Json) -ContentType 'application/json'
+# Record BOTH returned IDs and delete this role assignment before the definition in cleanup.</code></pre>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/what-is-single-sign-on">SSO approaches</a><a href="https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/custom-assign-graph">Custom role assignments</a><a href="https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/custom-available-permissions">App administration permissions</a></p>
+</section>
+
+<section class="module" id="a03" data-title="03 / Gallery SaaS and SAML SSO">
+<div class="module-head"><div><div class="number">Module 03 / gallery application</div><h2>Integrate a gallery SaaS application</h2></div><label class="done"><input type="checkbox" data-complete="a03"> Complete</label></div>
+<div class="route">Entra ID &gt; Enterprise apps &gt; New application &gt; Microsoft Entra SAML Toolkit</div>
+<ol class="steps">
+<li>Add the <strong>Microsoft Entra SAML Toolkit</strong> gallery app (or an owned SaaS test tenant with its current integration tutorial). Name it <code>APP-ACCESS-LAB-SAML</code>. A gallery template provides integration defaults, not completed vendor-side configuration.</li>
+<li>Open <strong>Single sign-on &gt; SAML</strong>. In the toolkit's test configuration, obtain its exact Identifier (Entity ID), Reply URL (ACS) and optional Sign-on URL. Enter those values in Basic SAML Configuration. Do not invent ACS URLs or copy another vendor's settings.</li>
+<li>Review <strong>Attributes &amp; Claims</strong>: choose NameID format and source required by the vendor. Map display name/email only if the test account has the values. Check whether the vendor needs UPN, email, immutable identifier or a specific role claim.</li>
+<li>Download the signing certificate/federation metadata and import them into the owned test application. Store the vendor's account credentials securely. Record signing-certificate expiry and a rollover plan; an uploaded certificate alone does not establish trust without the vendor binding.</li>
+<li>Set <strong>Properties &gt; Assignment required? Yes</strong>, leave sign-in enabled, and assign only <code>lab-app-allowed</code>. If the vendor uses local accounts, create/map its allowed-user account or configure provisioning first. Use <strong>Test this application</strong> and verify the assertion at the owned service.</li>
+<li>Compare a signed-in but unassigned non-admin user: the Entra assignment gate should deny the new sign-in. Also test direct vendor login. If local password login still works, document that bypass and disable it only in your owned test SaaS if its design permits.</li>
+</ol>
+<h3>Automation / instantiate the same gallery template</h3>
+<pre data-file="03-gallery.ps1"><code># Delegated Application.ReadWrite.All + an authorized app-management role.
+$templates = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/applicationTemplates?`$filter=displayName eq 'Microsoft Entra SAML Toolkit'"
+if ($templates.value.Count -ne 1) { throw 'Resolve the current gallery template ID manually; do not choose an arbitrary match.' }
+$templateId = $templates.value[0].id
+$body = @{displayName='APP-ACCESS-LAB-SAML'}
+Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/applicationTemplates/$templateId/instantiate" -Body ($body | ConvertTo-Json) -ContentType 'application/json'
+# Record returned application and service-principal IDs.
+# Vendor-specific SAML claim mapping/certificate setup still follows its integration tutorial.</code></pre>
+<p>Graph can automate template instantiation, service-principal assignment and supported claims policies. Vendor-side trust, account mapping and certificate installation need the vendor's own supported API or portal; do not assume template creation finishes SAML SSO.</p>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/add-application-portal">Gallery quickstart / toolkit</a><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/add-application-portal-setup-sso">SAML setup</a><a href="https://learn.microsoft.com/en-us/graph/api/applicationtemplate-instantiate?view=graph-rest-1.0">Template instantiate API</a></p>
+</section>
+
+<section class="module" id="a04" data-title="04 / Custom SaaS and application proxy">
+<div class="module-head"><div><div class="number">Module 04 / non-gallery and on-premises</div><h2>Integrate custom SaaS and publish an internal app</h2></div><label class="done"><input type="checkbox" data-complete="a04"> Complete</label></div>
+<h3>Custom SaaS branch</h3>
+<ol class="steps">
+<li>For a non-gallery SAML application, choose <strong>New application &gt; Create your own application &gt; Integrate any other application you don't find in the gallery</strong>. Name it with the lab prefix and configure the vendor's Entity ID, ACS, NameID and signing trust as in Module 03.</li>
+<li>For a custom OIDC application, use an <strong>app registration</strong>, not a generic SAML enterprise-app wizard. Its tenant service principal appears under Enterprise apps. Follow Modules 07-09.</li>
+<li>If the app supports only password-based SSO, record extension/browser requirements and credential ownership; linked mode is a launch shortcut. Test actual authentication at the app, rather than treating a My Apps tile as access proof.</li>
+</ol>
+<h3>Application proxy branch / gated</h3>
+<ol class="steps">
+<li>Verify the connector prerequisites from Module 00. On the supported Windows Server, install the Microsoft Entra <strong>private network connector</strong> using the official installer, register it with the disposable tenant and confirm it is Active in the portal. The connector must reach both the service and the internal web app.</li>
+<li>Browse the internal lab application's URL from the connector host. Resolve DNS and TLS trust first. Create a connector group dedicated to the lab if you need isolation; do not place a production connector in it.</li>
+<li>Choose <strong>Enterprise apps &gt; New application &gt; Add an on-premises application</strong>. Enter the reachable internal URL, use the generated external <code>msappproxy.net</code> URL initially, select the lab connector group and choose <strong>Microsoft Entra ID preauthentication</strong>, not passthrough.</li>
+<li>Explicitly grant the new proxy application's delegated <strong>User.Read</strong> permission admin consent. Since 30 June 2026 new proxy apps no longer receive that consent automatically. Confirm required assignment and assign only the allowed user.</li>
+<li>For an anonymous internal test page, demonstrate Entra preauthentication before the page is reachable. For Windows-integrated backend SSO, configure Kerberos constrained delegation, unique SPN, delegation identity and supported user identifier. Domain prerequisites are mandatory; anonymous preauthentication is not proof that KCD works.</li>
+<li>Use an external network/browser profile to compare the allowed and denied accounts. A successful connector health check is not sufficient: verify the browser receives the internal test content only after the intended sign-in.</li>
+</ol>
+<h3>Automation approach</h3>
+<p>Use the official <a href="https://learn.microsoft.com/en-us/graph/application-proxy-configure-api">application-proxy Graph configuration guide</a> and its PowerShell examples for connector/app publication and SSO settings; proxy-specific operations are currently beta. The guide requires a supported app administrator, a preinstalled connector and delegated <code>Directory.ReadWrite.All</code> consent: request that broader permission only for this authorized, disposable branch. Follow its sequence: instantiate custom template, update the application's onPremisesPublishing settings, assign the exact connector group, configure backend SSO, assign the test user, then test the external URL. Export exact lab app/connector-group IDs before changes. Once the proxy service principal exists, the same <code>appRoleAssignmentRequired</code>, user-assignment and delegated-consent Graph operations used by <a href="app-access-sample/tenant.ps1" download>tenant.ps1</a> apply to that <em>proxy</em> SP. Do not use the capstone SP ID by mistake. Connector installation and AD DS delegation are separate infrastructure operations, not Graph app registration.</p>
+<div class="callout warning">Do not expose the capstone loopback server directly to the internet or disable its Host check. Use a separate internal test service for this proxy branch.</div>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/app-proxy/application-proxy-add-on-premises-application">Proxy setup and new consent requirement</a><a href="https://learn.microsoft.com/en-us/entra/identity/app-proxy/how-to-configure-sso-with-kcd">Kerberos backend SSO</a></p>
+</section>
+
+<section class="module" id="a05" data-title="05 / Provision users and remove access">
+<div class="module-head"><div><div class="number">Module 05 / provisioning lifecycle</div><h2>Configure SCIM provisioning with a real target</h2></div><label class="done"><input type="checkbox" data-complete="a05"> Complete</label></div>
+<ol class="steps">
+<li>Select an owned gallery integration that supports provisioning or an owned SCIM 2.0 endpoint. Obtain its provisioning URL and token through the vendor's administrator interface. The supplied OIDC server is not a SCIM service.</li>
+<li>Open <strong>Enterprise app &gt; Provisioning</strong>, select the supported automatic mode, enter the target URL/secret and <strong>Test connection</strong>. Fix TLS, authentication and supported schema errors before enabling recurring synchronization.</li>
+<li>Inspect user mappings. Define a stable source-to-target matching attribute such as userPrincipalName or vendor-supported externalId; verify unique matches and required attributes. Record transformations and how target <code>active</code> state is derived. Do not match only on non-unique display names.</li>
+<li>Set scope to <strong>Sync only assigned users and groups</strong> where supported. Assign the allowed user, use <strong>Provision on demand</strong>, and verify the account in the target as well as provisioning logs. Check create versus update actions and matching decisions.</li>
+<li>Test a source attribute update. Then unassign the allowed user, run the supported provisioning cycle and verify the intended disable/deprovision operation in the target. Record delay and vendor behavior; deletion is not guaranteed by every connector.</li>
+<li>Compare the never-assigned denied user: it should not be provisioned by this scoped job. Check for an independently created target account, local login or a second sync job. Assignment, sign-in and target account lifecycle are distinct boundaries.</li>
+</ol>
+<h3>Automation approach</h3>
+<p>For supported connectors, use Graph <code>/servicePrincipals/{spId}/synchronization/jobs</code> to inspect/create the connector-specific job and schema, then its <code>/start</code>, <code>/pause</code> or <code>/provisionOnDemand</code> action with the documented payload. Use <code>Synchronization.Read.All</code> for inspection and <code>Synchronization.ReadWrite.All</code> plus a supported administrator role for writes. Resolve the connector's supported template ID first; there is no universal SCIM job template or mapping payload. Save a schema baseline, test one user, then start the recurring job.</p>
+<pre data-file="05-provisioning-inventory.ps1"><code># Authenticate with Synchronization.Read.All to the lab tenant.
+$SpId = [guid](Read-Host 'Provisioning enterprise app service-principal ID')
+$jobs = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$SpId/synchronization/jobs"
+$jobs.value | Select-Object id,templateId,schedule,status
+# Resolve the exact job, inspect its schema, and follow its connector tutorial before writing.
+# Never print provisioning bearer secrets or assume all jobs share a template.</code></pre>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/app-provisioning/configure-automatic-user-provisioning-portal">Provisioning configuration</a><a href="https://learn.microsoft.com/en-us/entra/identity/app-provisioning/use-scim-to-provision-users-and-groups">SCIM requirements</a><a href="https://learn.microsoft.com/en-us/graph/api/resources/synchronization-overview?view=graph-rest-1.0">Synchronization API</a></p>
+</section>
+
+<section class="module" id="a06" data-title="06 / Claims, consent and token customization">
+<div class="module-head"><div><div class="number">Module 06 / token contracts</div><h2>Customize claims without confusing consent with access</h2></div><label class="done"><input type="checkbox" data-complete="a06"> Complete</label></div>
+<ol class="steps">
+<li>For the SAML app inspect <strong>Attributes &amp; Claims</strong>, change one non-sensitive test attribute according to the vendor contract and retest. Record NameID, attribute name/source and signed assertion validation. An attribute visible in the editor is not proof the vendor consumes it.</li>
+<li>For the OIDC registration use <strong>Token configuration &gt; Add optional claim</strong>. Select an appropriate token type, for example <code>email</code> in the ID token, and understand it can be absent or change. Use tenant/object identifiers for internal identity keys; email is not an authorization rule.</li>
+<li>Compare <code>tid</code>, <code>aud</code>, issuer, expiry, nonce and <code>roles</code> in locally validated ID-token claims. Treat Graph access tokens as opaque and send them only to Graph; a token intended for your app is not a Graph token. Never paste real tokens into online decoders.</li>
+<li>Under <strong>Enterprise apps &gt; Consent and permissions</strong>, record user-consent policy and admin-consent request workflow. In a disposable branch use a dedicated consent-test app to compare a permitted low-risk delegated permission with one requiring administrator consent. Do not weaken the tenant-wide consent policy to make the capstone work.</li>
+<li>For an app requiring assignment, grant administrator consent to its required delegated permissions before end-user sign-in. Assignment itself does not grant consent; consent itself does not assign a user. Check the actual grant record, not just the registration's requested-permissions list.</li>
+</ol>
+<h3>Automation / optional ID-token claim</h3>
+<pre data-file="06-optional-claims.ps1"><code># Application.ReadWrite.All; APP-ACCESS-LAB app OBJECT ID only.
+$AppObjectId = [guid](Read-Host 'Lab registration object ID')
+$body = @{optionalClaims=@{idToken=@(@{name='email';essential=$false})}}
+# PATCH replaces the optionalClaims configuration: capture and merge existing claims first.
+Invoke-MgGraphRequest -Method PATCH -Uri "https://graph.microsoft.com/v1.0/applications/$AppObjectId" -Body ($body | ConvertTo-Json -Depth 8) -ContentType 'application/json'
+# Sign in afresh to inspect new claims; existing tokens do not change.</code></pre>
+<p>Use Graph <code>oauth2PermissionGrants</code> to inspect actual delegated grants; granting requested API permissions is separate from configuring <code>requiredResourceAccess</code>. The capstone setup script creates only a User.Read grant for its new client, not a tenant-wide permissive user-consent policy.</p>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity-platform/optional-claims">Optional claims</a><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-user-consent">User consent settings</a><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-admin-consent-workflow">Admin consent workflow</a></p>
+</section>
+
+<section class="module" id="a07" data-title="07 / Register a single-tenant web app">
+<div class="module-head"><div><div class="number">Module 07 / application objects</div><h2>Create the capstone app registration</h2></div><label class="done"><input type="checkbox" data-complete="a07"> Complete</label></div>
+<div class="route">Entra ID &gt; App registrations &gt; New registration</div>
+<ol class="steps">
+<li>Register <code>APP-ACCESS-LAB-Web</code> with <strong>Accounts in this organizational directory only</strong> (<code>AzureADMyOrg</code>). Select <strong>Web</strong> redirect platform and the exact URI <code>http://localhost:4300/callback</code>. Localhost HTTP is a development exception, not a production hosting pattern.</li>
+<li>Record <strong>Application (client) ID</strong>, <strong>Directory (tenant) ID</strong> and the registration's <strong>Object ID</strong>. Find its matching Enterprise application and record that service principal's different Object ID. Graph <code>/applications/{id}</code> takes the registration object ID; assignment calls take the SP object ID; OIDC uses the client ID.</li>
+<li>Under Authentication, keep implicit ID/access-token checkboxes off and public-client flows off. This is a confidential web app using authorization code plus PKCE. Do not configure the web redirect as SPA.</li>
+<li>Under Certificates &amp; secrets create a short-lived <code>APP-ACCESS-LAB temporary</code> client secret (choose the shortest available portal expiry), copy the <em>value</em> into this terminal's environment and record only its key ID/expiry. The secret ID is not the secret value. Prefer certificate or federated credentials for suitable production workloads; the sample deliberately uses a disposable secret for local teaching.</li>
+<li>Set Enterprise-app Properties: <strong>Enabled for users to sign-in: Yes</strong>, <strong>Assignment required: Yes</strong>. My Apps visibility may be Yes for discovery, but hiding a tile is not access control. Leave the denied account unassigned.</li>
+</ol>
+<h3>Automation / choose one creation route, not both</h3>
+<p>The downloadable <a href="app-access-sample/tenant.ps1" download>tenant.ps1</a> creates this registration, its SP, both roles, only the allowed-user Reader assignment, the User.Read delegated grant, and a one-day secret. It checks tenant and administrator identity, refuses duplicate lab names/state files, writes object IDs after each create, and never writes the secret to the state JSON.</p>
+<pre data-file="07-setup.ps1"><code># In the folder containing tenant.ps1; use your own disposable tenant/object IDs.
+.\tenant.ps1 -Action Setup -TenantId (Read-Host 'Tenant GUID') -ExpectedAdminId (Read-Host 'Admin USER object GUID') -AllowedUserId (Read-Host 'Allowed USER object GUID') -DeniedUserId (Read-Host 'Denied USER object GUID')
+# The script requests confirmation before writes. Run the sample in THIS terminal
+# so TENANT_ID, CLIENT_ID and CLIENT_SECRET remain available.
+# A partial failure leaves app-access-lab.json with the confirmed IDs.
+# Inspect/clean up that state; never blindly rerun creates.</code></pre>
+<div class="callout warning">For portal creation, do not run Setup afterward. Enter the portal-created IDs/secret as in Module 13 and use the portal for cleanup. <code>tenant.ps1</code> manages only resources it created and identified in its state file.</div>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app">Registration quickstart</a><a href="https://learn.microsoft.com/en-us/entra/identity-platform/app-objects-and-service-principals">Application versus service principal</a><a href="https://learn.microsoft.com/en-us/entra/identity-platform/reply-url">Redirect URI restrictions</a></p>
+</section>
+
+<section class="module" id="a08" data-title="08 / API permissions and multi-tier access">
+<div class="module-head"><div><div class="number">Module 08 / permissions are resource-specific</div><h2>Configure delegated, application and multi-tier permissions</h2></div><label class="done"><input type="checkbox" data-complete="a08"> Complete</label></div>
+<ol class="steps">
+<li>On the web registration choose <strong>API permissions &gt; Add a permission &gt; Microsoft Graph &gt; Delegated &gt; User.Read</strong>. Grant authorized administrator consent for this lab client. Confirm the green consent state and actual grant. Do not add Directory.ReadWrite.All or mailbox permissions to this client.</li>
+<li>The signed-in user's Graph <code>/me</code> request uses delegated access and that user's context. A background daemon uses <em>application</em> permissions, app-only consent and client credentials; <code>/me</code> is not available without a user. For planning, identify the exact resource, operation and least-privileged scope/role before requesting consent.</li>
+<li>For the multi-tier extension register a separate <code>APP-ACCESS-LAB-API</code>, set an Application ID URI <code>api://API_CLIENT_ID</code> and expose delegated scope <code>access_as_user</code>. Add that scope to the frontend/web client and grant consent. Configure the API's JWT middleware to validate its own audience, issuer, signature, expiry, tenant and required <code>scp</code> value. The supplied web sample is not an API access-token validator.</li>
+<li>Have the client request an access token for that API, not Graph, and send it as a Bearer token. Demonstrate that a Graph token cannot be used to call the custom API and that an ID token is not accepted in place of an API token.</li>
+<li>If the API needs Graph on behalf of the user, give the <em>API registration</em> delegated Graph User.Read, grant consent, and implement OBO at the API's token endpoint. Exchange the incoming API access token for a new Graph token. Do not forward the incoming token to Graph or use the web client's secret as the API's credential.</li>
+<li>For an app-only custom API design expose an application app role (allowed member type Applications), assign it to the caller SP and require <code>roles</code> rather than delegated <code>scp</code>. Document that the User-only Reader role in this capstone does not authorize daemon clients.</li>
+</ol>
+<h3>Automation / API scope and OBO configuration</h3>
+<pre data-file="08-api-scope.ps1"><code># Application.ReadWrite.All; use a NEW disposable API registration.
+$ApiObjectId = [guid](Read-Host 'API registration OBJECT ID')
+$ApiClientId = [guid](Read-Host 'API application CLIENT ID')
+$ScopeId = [guid]::NewGuid().ToString()
+$body = @{
+    identifierUris=@("api://$ApiClientId")
+    api=@{oauth2PermissionScopes=@(@{
+        id=$ScopeId;value='access_as_user';type='Admin';isEnabled=$true
+        adminConsentDisplayName='Access the lab API';adminConsentDescription='Access the disposable API as the signed-in user'
+    })}
+}
+# This replaces the API scope collection: use only on the NEW lab API.
+Invoke-MgGraphRequest -Method PATCH -Uri "https://graph.microsoft.com/v1.0/applications/$ApiObjectId" -Body ($body | ConvertTo-Json -Depth 10) -ContentType 'application/json'
+# Add resourceAppId=API client ID + this ScopeId/type=Scope to the caller's
+# requiredResourceAccess, preserving its existing Graph entry; consent separately.</code></pre>
+<p>OBO's confidential API request uses <code>grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer</code>, <code>requested_token_use=on_behalf_of</code>, the validated incoming assertion and downstream Graph scope. Use a supported token library and the <a href="https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-on-behalf-of-flow">official OBO implementation guide</a>; never log the assertion/secret. This extension requires a separately implemented API; do not claim it ran by merely adding its scope.</p>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity-platform/permissions-consent-overview">Permissions and consent</a><a href="https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-configure-app-expose-web-apis">Expose an API</a><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/grant-admin-consent">Consent authority</a></p>
+</section>
+
+<section class="module" id="a09" data-title="09 / App roles and assignment boundaries">
+<div class="module-head"><div><div class="number">Module 09 / authorization</div><h2>Assign the Reader role to exactly one user</h2></div><label class="done"><input type="checkbox" data-complete="a09"> Complete</label></div>
+<ol class="steps">
+<li>On <strong>App registration &gt; App roles &gt; Create app role</strong> create <strong>Lab Reader</strong>, allowed member types <strong>Users/Groups</strong>, value <code>Lab.Reader</code>, description “Read protected lab content”, Enabled Yes. Create <strong>Lab Observer</strong> with value <code>Lab.Observer</code> for the later role-only control.</li>
+<li>In the <em>matching Enterprise app</em>, confirm Assignment required Yes and sign-in enabled. In <strong>Users and groups &gt; Add user/group</strong>, assign <code>lab-app-allowed</code> to <strong>Lab Reader</strong>. Do not assign the denied user, even to Default Access, for the baseline.</li>
+<li>Check direct user and group assignments. With P1/P2, a group-based variant may assign Reader to a group containing only the allowed account; nested group membership is not supported. Record group versus direct paths and do not let both paths hide the negative test.</li>
+<li>Explain how these controls compose: assignmentRequired gates new sign-in/token issuance; the app validates its login and checks the <code>Lab.Reader</code> role before returning protected content. A frontend hiding a button is not enforcement.</li>
+<li>Sign in again after changing roles. Existing tokens/sessions retain their old claims until refreshed/expired, and app assignment changes are not instant global logout. Use the sample's local logout plus a clean browser profile for each comparison.</li>
+</ol>
+<h3>Automation / use SP identifiers and exact role ID</h3>
+<pre data-file="09-assignment-inspect.ps1"><code># Application.Read.All + User.Read.All; use the setup state file.
+$state = Get-Content .\app-access-lab.json -Raw | ConvertFrom-Json
+Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($state.spId)?`$select=id,appId,appRoleAssignmentRequired"
+Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($state.spId)/appRoleAssignedTo"
+# Setup posts principalId=allowed USER ID, resourceId=SP ID,
+# appRoleId=the Reader role GUID. Zero-GUID Default Access is NOT Lab.Reader.
+# Denied should have no direct assignment; check group assignments separately.</code></pre>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity-platform/howto-add-app-roles-in-apps">App roles</a><a href="https://learn.microsoft.com/en-us/graph/api/serviceprincipal-post-approleassignedto?view=graph-rest-1.0">Role assignment API</a></p>
+</section>
+
+<section class="module" id="a10" data-title="10 / SPA authentication and multitenant strategy">
+<div class="module-head"><div><div class="number">Module 10 / registration variants</div><h2>Compare web, SPA and multitenant registration</h2></div><label class="done"><input type="checkbox" data-complete="a10"> Complete</label></div>
+<h3>SPA branch</h3>
+<ol class="steps">
+<li>Create a separate <code>APP-ACCESS-LAB-SPA</code> single-tenant registration, add the <strong>Single-page application</strong> platform and exact local redirect <code>http://localhost:5173</code>. Keep implicit grant off. A browser public client must not contain a client secret.</li>
+<li>Use the current official MSAL browser sample with <code>@azure/msal-browser</code>, your SPA client ID and tenant-specific authority. Initialize the MSAL client, use authorization-code/PKCE sign-in and acquire a delegated User.Read access token. Configure assignments/consent for this SPA SP separately from the web SP.</li>
+<li>Test account selection and Graph <code>/me</code> using the SPA's token. Compare redirect versus popup behavior and browser privacy/CORS errors. The Web platform uses a confidential server exchange; the SPA platform permits the supported browser token exchange.</li>
+<li>If the SPA calls a custom API, enforce the scope/role on that API as in Module 08. Showing role text or hiding UI in the SPA is a UX decision, never the authorization boundary.</li>
+</ol>
+<pre data-file="10-spa-platform.ps1"><code># Application.ReadWrite.All; a NEW separate SPA registration OBJECT ID.
+$SpaObjectId = [guid](Read-Host 'New SPA registration object ID')
+$body = @{spa=@{redirectUris=@('http://localhost:5173')}}
+Invoke-MgGraphRequest -Method PATCH -Uri "https://graph.microsoft.com/v1.0/applications/$SpaObjectId" -Body ($body | ConvertTo-Json -Depth 5) -ContentType 'application/json'
+# No passwordCredential in browser code. Use the official MSAL browser sample.</code></pre>
+<h3>Multitenant branch</h3>
+<ol class="steps">
+<li>In a separate lab registration compare <code>AzureADMyOrg</code> (one workforce tenant), <code>AzureADMultipleOrgs</code> (other workforce tenants), and account types including personal Microsoft accounts. Choose based on the business trust model, not to bypass a tenant restriction.</li>
+<li>For a multitenant workforce app, use an implementation designed for tenant-aware issuer validation, an explicit accepted-tenant policy and authorization after authentication. The supplied capstone stays pinned to one tenant; changing only the portal audience does not make it multitenant.</li>
+<li>With the administrator of the second disposable tenant, review requested permissions and consent to the multitenant app. Find the new service principal <em>in that tenant</em>: its client appId is shared, its SP object ID and local assignments/grants are different. The original application object remains in its home tenant.</li>
+<li>Apply required assignment and role mapping in the second tenant, retest a fresh member account and verify tenant/issuer claims. Remove the external SP/consent in that second tenant during cleanup. A guest in a single-tenant resource directory and a separate multitenant service principal are not the same scenario.</li>
+</ol>
+<p>Graph can PATCH <code>signInAudience</code> and configure the SPA's <code>spa.redirectUris</code>, preserving other settings. Capture a baseline and use a separate app. Do not replace a fixed trusted issuer with “accept any token from common”.</p>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-single-page-app-sign-in">SPA sample</a><a href="https://learn.microsoft.com/en-us/entra/identity-platform/howto-convert-app-to-be-multi-tenant">Multitenant design</a></p>
+</section>
+
+<section class="module" id="a11" data-title="11 / OAuth policies and app governance">
+<div class="module-head"><div><div class="number">Module 11 / govern OAuth applications</div><h2>Investigate permissions and test a narrowly scoped policy</h2></div><label class="done"><input type="checkbox" data-complete="a11"> Complete</label></div>
+<ol class="steps">
+<li>With the Defender prerequisites satisfied, enable app governance under <strong>Settings &gt; Cloud Apps &gt; App governance</strong> and wait for availability. Confirm region/license/role support. Configure the Microsoft 365 connector if your lab has it and you need resource-activity visibility.</li>
+<li>Open <strong>Cloud apps &gt; OAuth apps</strong> or the current app-governance view. Locate a dedicated lab app by exact client ID, compare requested permissions, granted permissions, consentors, publisher verification and observed usage. “Requested” is not “granted”, and no activity may mean delayed/absent telemetry.</li>
+<li>Create an OAuth/app-governance policy constrained to lab identities/app and choose alert-only initially. For example flag a test app with a permission outside your approved baseline. Do not grant broad real permissions merely to trigger an alert; use existing safe lab evidence or mark the trigger not run.</li>
+<li>Review alert details, associated app and consent. If the feature supports an app-specific ban/disable or grant revocation, test it only on the disposable app, note exact action and verify its SP/grants and a new sign-in afterward.</li>
+<li>Restore the test app's intended state before the capstone or keep this as a separate app. Disabling an SP, revoking a grant and deleting an assignment have different impacts. Record authorization decisions and residual session/token lifetimes.</li>
+</ol>
+<h3>Automation approach / policy versus remediation</h3>
+<p>Use Defender's currently documented governance/policy API if available for the specific product/feature; there is no general Graph endpoint that creates every Defender OAuth policy. For an authorized <em>Entra remediation</em>, Graph can disable an exact SP or delete an exact <code>oauth2PermissionGrant</code>. Record old values and restore only that lab app. Tenant-wide grant deletion is never this exercise.</p>
+<pre data-file="11-disable-lab-sp.ps1"><code># Application.ReadWrite.All; exact lab SP ID. Save accountEnabled beforehand.
+$SpId = [guid](Read-Host 'Disposable lab service-principal ID')
+$sp = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$SpId"
+if ($sp.displayName -notlike 'APP-ACCESS-LAB-*') { throw 'Not a lab service principal.' }
+Invoke-MgGraphRequest -Method PATCH -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$SpId" -Body '{"accountEnabled":false}' -ContentType 'application/json'
+# Verify denial on a NEW sign-in, then restore the captured accountEnabled value.
+# This is SP remediation, NOT creation of a Defender OAuth policy.</code></pre>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/defender-cloud-apps/app-governance-get-started">App governance setup</a><a href="https://learn.microsoft.com/en-us/defender-cloud-apps/app-permission-policy">OAuth app policies</a><a href="https://learn.microsoft.com/en-us/defender-cloud-apps/app-governance-manage-app-governance">Governance controls</a></p>
+</section>
+
+<section class="module" id="a12" data-title="12 / Collections, sign-in logs and auditing">
+<div class="module-head"><div><div class="number">Module 12 / visibility and evidence</div><h2>Organize apps and correlate access events</h2></div><label class="done"><input type="checkbox" data-complete="a12"> Complete</label></div>
+<ol class="steps">
+<li>With the required license/role, create an <strong>Enterprise apps &gt; Collections</strong> collection named <code>APP-ACCESS-LAB</code>, add the lab apps and scope its users/groups to the intended audience. Verify it in My Apps as the allowed user. Collection membership organizes/displays apps; it does not replace app assignment or application authorization.</li>
+<li>Open each enterprise application's <strong>Sign-in logs</strong>. Filter its exact client/app ID, time range and allowed/denied user. Record UTC, result/error code, correlation ID, authentication requirement and Conditional Access status. Logs can lag; wait and widen the time window before claiming no event.</li>
+<li>Open <strong>Audit logs</strong> and find app creation, role changes, user assignment, property changes and consent. Capture initiating administrator and target IDs. For the provisioning branch also use provisioning logs and the target account result.</li>
+<li>Optionally send SignInLogs and AuditLogs to an owned Log Analytics workspace through Entra diagnostic settings. Verify the categories and ingestion cost/retention before enabling them. Test KQL against actual ingested data, not an empty newly created workspace.</li>
+<li>Compare portal sign-in success with the app's HTTP outcome. Observer can authenticate successfully yet receive 403 from <code>/protected</code>; that app-level denial is not necessarily an Entra sign-in failure.</li>
+</ol>
+<h3>Automation / Graph logs and workspace query</h3>
+<pre data-file="12-signins.ps1"><code># AuditLog.Read.All plus a supported reporting role and license.
+$ClientId = [guid](Read-Host 'Application CLIENT ID')
+$since = [datetime]::UtcNow.AddHours(-2).ToString('yyyy-MM-ddTHH:mm:ssZ')
+$filter = [uri]::EscapeDataString("appId eq '$ClientId' and createdDateTime ge $since")
+$next = "https://graph.microsoft.com/v1.0/auditLogs/signIns?`$filter=$filter"
+while ($next) {
+    if (-not $next.StartsWith('https://graph.microsoft.com/v1.0/')) { throw 'Unexpected paging host.' }
+    $page = Invoke-MgGraphRequest -Method GET -Uri $next
+    $page.value | Select-Object createdDateTime,userId,appId,correlationId,status,conditionalAccessStatus
+    $next = $page.'@odata.nextLink'
+}</code></pre>
+<pre data-file="12-signins.kql" data-lang="KQL"><code>SigninLogs
+| where TimeGenerated &gt; ago(2h)
+| where AppDisplayName == "APP-ACCESS-LAB-Web"
+| project TimeGenerated, AppId, UserId, ResultType, ResultDescription,
+          ConditionalAccessStatus, CorrelationId
+| order by TimeGenerated asc
+// After discovery, prefer the exact AppId and two UserIds over display-name filters.</code></pre>
+<p>Collections are configured through their supported portal surface; use current product documentation rather than inventing a <code>/collections</code> Graph endpoint. Use Graph <code>auditLogs/directoryAudits</code> for configuration audit events, not the signIns collection.</p>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/access-panel-collections">Application collections</a><a href="https://learn.microsoft.com/en-us/entra/identity/monitoring-health/concept-sign-ins">Sign-in logs</a><a href="https://learn.microsoft.com/en-us/entra/identity/monitoring-health/howto-configure-diagnostic-settings">Diagnostic settings</a></p>
+</section>
+
+<section class="module" id="a13" data-title="13 / Run the local capstone application">
+<div class="module-head"><div><div class="number">Module 13 / working application</div><h2>Start a local OIDC app that enforces its role</h2></div><label class="done"><input type="checkbox" data-complete="a13"> Complete</label></div>
+<ol class="steps">
+<li>Download the six sample files linked at the start, or clone <code>https://github.com/petrurey/personal_lab.git</code> and enter <code>labs\app-access-sample</code>. Node.js 22+ is required. The GitHub Pages site hosts only this guide/source, not the Node server or your secret.</li>
+<li>If you used Setup, keep the same PowerShell session so its environment survives; move into the sample folder. If you used the portal, set tenant/client IDs and enter the secret value securely using the block below.</li>
+<li>Run <code>npm ci</code>, then <code>npm test</code>, then <code>npm start</code>. Startup performs tenant-specific OIDC discovery. Failures must be fixed before proceeding; there is no “mock success” login mode in the real server.</li>
+<li>Open <code>http://localhost:4300</code>, exactly. The server is bound to loopback and rejects other Host headers. Its registered redirect is <code>http://localhost:4300/callback</code>. <code>127.0.0.1</code>, another port, SPA callback or a trailing-path mismatch is not interchangeable.</li>
+<li>Before sign-in, browse <code>/protected</code> and <code>/profile</code>: both return HTTP 401. Sign-in uses authorization code, S256 PKCE, state and nonce checks through openid-client, plus ID-token signature checks. It validates the configured tenant, rotates the server-side session and requires <code>Lab.Reader</code> at both protected routes.</li>
+<li>The app keeps secrets/access tokens in server memory only. The browser receives an opaque HttpOnly, SameSite=Lax session ID, not the secret. The local cookie is not Secure because this demonstration uses HTTP localhost; this configuration is not suitable for production. Sessions expire after at most 15 minutes or ID-token expiry.</li>
+<li><code>/logout</code> clears only this application's local session. Use browser profiles/account selection to avoid Microsoft SSO mixing the test users. Stop the server with Ctrl+C and delete its temporary secret during cleanup.</li>
+</ol>
+<pre data-file="13-run-sample.ps1"><code># Portal-created app only; Setup has already set these in its terminal.
+$env:TENANT_ID = Read-Host 'Lab tenant GUID'
+$env:CLIENT_ID = Read-Host 'Lab application CLIENT ID'
+$secret = Read-Host 'Temporary client secret VALUE' -AsSecureString
+$env:CLIENT_SECRET = [System.Net.NetworkCredential]::new('', $secret).Password
+Remove-Variable secret
+# In the downloaded/cloned app-access-sample folder:
+npm ci
+npm test
+npm start
+# Open http://localhost:4300, not the GitHub Pages URL.
+# Secret exists in process memory/environment. Do not print or save it.</code></pre>
+<details><summary>What the automated sample tests prove (and what they do not)</summary><p>Local tests check 401/403/200 role decisions, tenant and expiry gates, role-array validation, session rotation, callback replay denial, protected Graph routing and logout. The HTTP test uses a stub identity provider. With dependencies installed, a real-library test uses locally generated signed JWTs and mocked HTTPS responses to verify rejection of bad state, nonce, audience, issuer, expiry and signature. No test contacts an actual tenant. These tests do not prove your tenant credentials, consent, provisioning, connector, real token issuance or assigned/denied outcomes. Run Module 14 with actual lab users to obtain that evidence.</p></details>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow">Authorization code / PKCE</a><a href="https://github.com/panva/openid-client">openid-client library</a><a href="https://learn.microsoft.com/en-us/entra/identity-platform/id-token-claims-reference">ID-token claims</a></p>
+</section>
+
+<section class="module" id="a14" data-title="14 / Compare allowed and denied accounts">
+<div class="module-head"><div><div class="number">Module 14 / final scenario</div><h2>Prove access for one account and denial for another</h2></div><label class="done"><input type="checkbox" data-complete="a14"> Complete</label></div>
+<p>Use the same app, resource URL, tenant, network and fresh-session conditions for both accounts. Record exact user object IDs so display-name/SSO confusion cannot explain the difference.</p>
+<ol class="steps">
+<li><strong>Baseline:</strong> inspect the web SP: sign-in enabled, assignmentRequired true, only allowed user assigned Lab Reader, no alternative group/direct access for denied. Both accounts are enabled ordinary tenant members. User.Read admin consent is present for this web SP.</li>
+<li><strong>Allowed profile:</strong> open <code>http://localhost:4300/login</code>, select allowed, satisfy MFA/Conditional Access, and observe the callback then <code>/protected</code>. Expect HTTP 200 with <code>Lab.Reader</code> in the returned claims summary. Request <code>/profile</code> and expect Graph /me for that same allowed account.</li>
+<li><strong>Denied profile:</strong> start a separate clean profile and choose denied at the same login URL. For an unassigned non-admin user, expect Entra assignment rejection, commonly <code>AADSTS50105</code>. Record the actual code/correlation ID. No protected content or new authorized session may be returned. Do not interpret a password/MFA failure as the desired assignment test.</li>
+<li><strong>Role-only control:</strong> assign the denied user <strong>Lab Observer</strong>, not Reader, and sign in fresh. Now authentication can succeed but <code>/protected</code> and <code>/profile</code> must return HTTP 403 for missing Reader. This separates Entra assignment from the app's own role authorization. Remove this Observer assignment afterward to restore the original baseline.</li>
+<li><strong>Revocation test:</strong> remove allowed's Reader assignment. First observe the existing app session may still work; record its remaining lifetime. Then clear the local session and sign in afresh. Expect the assignment gate to deny. Restore Reader only if more lab testing is needed. Do not claim immediate session revocation from a directory change.</li>
+<li><strong>Optional CA control:</strong> on a separate, tightly scoped lab policy targeting this app and only the two test users, use report-only MFA first. Interpret sign-in log evaluation, then enforce only after both users are registered and emergency administrators excluded. A CA block is an additional boundary, not evidence of missing app role.</li>
+</ol>
+<div class="table-wrap"><table id="comparison"><thead><tr><th>Identity / condition</th><th>Authentication / assignment</th><th>Protected page</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Anonymous</td><td>No local session</td><td>401</td><td>Actual HTTP status at /protected and /profile</td></tr>
+<tr><td>Allowed + Reader</td><td>New Entra sign-in succeeds; Reader emitted</td><td>200; own Graph /me allowed</td><td>Assigned role GUID, validated role value, UTC, correlation ID, HTTP result</td></tr>
+<tr><td>Denied + no assignment</td><td>New Entra sign-in rejected, commonly AADSTS50105</td><td>No authorized access</td><td>Actual Entra failure, no app session/content; not a password or MFA error</td></tr>
+<tr><td>Denied + Observer only</td><td>Sign-in succeeds; Observer but not Reader</td><td>403 at both routes</td><td>Successful sign-in log paired with application denial</td></tr>
+<tr><td>Allowed after unassignment</td><td>Existing session may persist; new login should fail</td><td>Compare cached session versus fresh 401/assignment rejection</td><td>Session age, removed assignment ID and new sign-in result</td></tr>
+</tbody></table></div>
+<h3>Automation / inspect configuration and test the app boundary</h3>
+<pre data-file="14-verify.ps1"><code># Configuration inspection is separate from user sign-in.
+.\tenant.ps1 -Action Inspect -TenantId (Read-Host 'Tenant GUID') -ExpectedAdminId (Read-Host 'Admin user object GUID')
+# Anonymous request: expect 401; curl does not magically obtain a browser session.
+curl.exe -i http://localhost:4300/protected
+# In each browser profile inspect Network &gt; /protected and /profile status.
+# Do not automate with username/password (ROPC) to bypass MFA.
+# The Node test runner uses mock identities; real user sign-ins remain required.</code></pre>
+<div class="callout check"><strong>Definition of done:</strong> two real non-admin users compared against the same protected resource, plus Observer 403 and fresh-session revocation controls. Save redacted evidence locally. A My Apps tile, granted consent, checkbox or mocked test result alone is not access proof.</div>
+<p class="sources"><a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/what-is-access-management">Assignment gate</a><a href="https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-conditional-access-report-only">Report-only CA</a></p>
+</section>
+
+<section class="module" id="a15" data-title="15 / Troubleshoot, clean up and explain">
+<div class="module-head"><div><div class="number">Module 15 / remove residual access</div><h2>Clean up and explain every boundary</h2></div><label class="done"><input type="checkbox" data-complete="a15"> Complete</label></div>
+<div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Check before changing controls</th></tr></thead><tbody>
+<tr><td>Reply URL / AADSTS50011</td><td>Exact registered Web localhost URI, port and callback; client ID belongs to the intended registration.</td></tr>
+<tr><td>Invalid client / secret</td><td>Secret value versus key ID; expiry; process environment; same terminal; correct tenant/client. Never print secrets for debugging.</td></tr>
+<tr><td>Consent error</td><td>Requested resource/scope, actual grant, supported admin role, assignment-required rule, fresh token and user-consent policy.</td></tr>
+<tr><td>Denied account unexpectedly succeeds</td><td>Wrong browser account; directory administrator; direct/group assignment; assignmentRequired false; app role bypass; stale session/token; different app/SP.</td></tr>
+<tr><td>Sign-in succeeds but 403</td><td>Reader versus Observer/Default Access, exact role value/case, User allowed member type, new token, role propagation and correct SP assignment.</td></tr>
+<tr><td>Graph /me fails</td><td>Delegated Graph User.Read, correct Graph audience/token, admin consent, new login, no client-credentials /me misuse; sample reports Graph failure as 502.</td></tr>
+<tr><td>Proxy/provisioning failure</td><td>Connector/target reachability and schema, license, service principal, target identity mapping, explicit proxy User.Read consent, sync-job logs and delay.</td></tr>
+<tr><td>429 / interrupted automation</td><td>Honor Retry-After; inspect confirmed object IDs and partial state. Do not blindly replay create operations or broad deletes.</td></tr>
+</tbody></table></div>
+<ol class="steps">
+<li>Export local reading progress if desired; it is not a configuration backup. Stop the local server and remove the temporary secret from the environment. Remove the app credential in Entra, not just from your shell.</li>
+<li>Pause/delete the exact lab provisioning job before removing assignments; confirm intended target disable/deprovision first. Delete only lab SaaS accounts you own. Remove the lab gallery/custom/proxy apps and restore any captured app-specific settings.</li>
+<li>Remove custom directory-role assignments before deleting their role definitions. Remove lab collections, lab CA/governance policies and second-tenant SP/consent. Verify the second tenant separately.</li>
+<li>Remove only the connector/group installed for this exercise if it serves no other app. Delete the internal test service/VM only after confirming ownership and no shared dependencies. Disable diagnostic settings/workspace resources created solely for the lab and review cost.</li>
+<li>For script-created core resources, use Cleanup below. It confirms tenant, exact app/SP identity and lab marker and asks for the exact app object ID. For portal-created resources, delete the recorded objects in the portal. Never delete by display name alone.</li>
+<li>Verify the app/SP is absent, no lab credential/grant/assignment remains, test accounts have no residual app-admin roles, and any temporary tenant settings are back at their recorded baseline. Retain redacted audit evidence; remove test user accounts only if you created them exclusively for this lab.</li>
+</ol>
+<pre data-file="15-cleanup.ps1"><code># Script-created app only; keep the state file for exact identities.
+.\tenant.ps1 -Action Cleanup -TenantId (Read-Host 'Tenant GUID') -ExpectedAdminId (Read-Host 'Admin user object GUID')
+if (Test-Path Env:CLIENT_SECRET) { Remove-Item Env:CLIENT_SECRET }
+Disconnect-MgGraph
+# Cleanup deletes the core app/SP, not other branch resources or test users.
+# Verify absence in the portal and clean the separate branches explicitly.</code></pre>
+<h3>Explain it without the portal</h3>
+<ol class="steps"><li>Which object is global to the app and which object represents it in a tenant?</li><li>Why can an account have consent but no app assignment, or sign in with Observer yet get 403?</li><li>Why does SAML account provisioning differ from SSO and a My Apps collection?</li><li>Which claims belong to the web app, custom API and Graph, and why is token forwarding not OBO?</li><li>Which changes affect a new sign-in but may not terminate an existing session?</li><li>Which advanced branches did you actually execute, and what license/system prevented the others?</li></ol>
+<div class="callout">This lab's browser controls never deploy resources or attest tenant success. Sample HTTP tests use stub identities. No tenant automation or real user sign-in has been executed on your behalf; those are authorized exercises for your disposable environment.</div>
+</section>
+<p class="small">Independent field lab. Reference check: 6 November 2026. Reading requires no external fonts, libraries or telemetry. The separate Node capstone uses a standard OIDC library and contacts your selected tenant only when you run it.</p>
+</main></div>
+<div id="status" class="status" role="status" aria-live="polite"></div>
+<script src="../assets/resource-nav.js?v=2" defer></script>
+</body>
+</html>

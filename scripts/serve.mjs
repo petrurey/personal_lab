@@ -7,7 +7,7 @@ import { homedir } from "node:os";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const port = Number(process.env.PORT || 4173);
 const originalPlan = resolve(process.env.IDENTITY_PLAN_PATH || resolve(homedir(), "identity-development-plan.html"));
-const types = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".svg": "image/svg+xml" };
+const types = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".svg": "image/svg+xml", ".mjs": "text/javascript; charset=utf-8", ".ps1": "text/plain; charset=utf-8", ".json": "application/json; charset=utf-8" };
 const allowed = new Set(["index.html", "404.html", "assets", "plans", "labs", "info"]);
 createServer(async (request, response) => {
   try {
@@ -27,7 +27,7 @@ createServer(async (request, response) => {
     }
     const file = resolve(root, `.${pathname.endsWith("/") ? `${pathname}index.html` : pathname}`);
     const relative = file.slice(root.length + 1);
-    if (!file.startsWith(`${root}${sep}`) || !allowed.has(relative.split(sep)[0]) || !types[extname(file)]) {
+    if (!file.startsWith(`${root}${sep}`) || !allowed.has(relative.split(sep)[0]) || relative.split(sep).some(part => part === "node_modules" || part === "app-access-lab.json" || part.startsWith(".")) || !types[extname(file)]) {
       response.writeHead(404).end("Not found");
       return;
     }

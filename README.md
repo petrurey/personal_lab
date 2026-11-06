@@ -3,7 +3,7 @@
 A dependency-free personal dashboard with three sections:
 
 - **Plans:** the full, unchanged original identity development plan when running locally. The public website shows local-access instructions instead of a replacement roadmap.
-- **Labs:** the original PIM field lab, including its interactive controls and downloadable scripts.
+- **Labs:** the original PIM field lab and a new application-access field lab, both with interactive controls and downloadable scripts.
 - **Info:** the original interactive Microsoft Entra built-in roles reference.
 
 The landing page presents three distinct, high-contrast columns with compact category headings and independently scrollable, keyboard-focusable page lists. Plans is green, Labs is blue and Info is purple. Each heading also opens its dedicated category page (`plans/`, `labs/` or `info/`), showing only that category's searchable cards. Category pages reuse the same palette and high-contrast card styles, including themed headings, active navigation, and search controls. There is no introductory or footer text around the index columns. Header navigation and the imported pages' floating navigation link directly to category pages. All site links are relative and work under a GitHub Pages repository path.
@@ -18,6 +18,29 @@ npm start
 ```
 
 Open http://127.0.0.1:4173. Stop the server with Ctrl+C.
+
+## Application access field lab
+
+Open [Access management for apps](labs/app-access-lab.html) directly, from the Labs card, or at https://petrurey.github.io/personal_lab/labs/app-access-lab.html.
+
+The independently authored lab maps all four modules in the linked Microsoft Learn path to 16 field modules: discovery/connectors, delegated app administration, gallery/custom SSO, application proxy, SCIM provisioning, claims/consent, registration, API permissions/OBO, app roles, SPA/multitenant design, governance, collections/logs and a final allowed-versus-denied comparison. Each branch lists its licenses, roles, systems, portal steps and automation approach. Unavailable advanced branches must be recorded as not run, not treated as completed.
+
+The [local capstone sample](labs/app-access-sample/) is a separate Node.js 22+ application. GitHub Pages serves its source only. After preparing a disposable tenant using the lab's portal instructions or `tenant.ps1`, set `TENANT_ID`, `CLIENT_ID` and the temporary `CLIENT_SECRET` **in the local terminal only**, then run:
+
+```powershell
+Set-Location .\labs\app-access-sample
+npm ci
+npm test
+npm start
+```
+
+Open http://localhost:4300. The app uses tenant-specific OIDC, authorization code/PKCE, state/nonce and ID-token signature checks. It enforces `Lab.Reader` on the server, returns 401 when anonymous and 403 for an authenticated Observer, and calls Graph `/me` only for Readers. It binds to loopback; this teaching server and its HTTP cookie configuration are not production hosting.
+
+Root `npm test` also runs the sample's native tests. The HTTP integration test stubs the identity provider; after installing the sample dependencies, a separate real-library test uses locally generated signed JWTs and mocked HTTPS responses to verify rejection of invalid state, nonce, audience, issuer, expiry and signature. That test is skipped if the dependency is absent; CI installs it. No test contacts a real tenant. Tests do not prove real tenant sign-in, permissions, provisioning, proxy or governance. Run the lab's two-user comparison and fresh-session controls for those results. On systems with PowerShell 7, root tests also parse every downloadable PowerShell block and the tenant script.
+
+`tenant.ps1` checks the tenant and administrator identity, confirms writes, saves only created object IDs in `app-access-lab.json`, and puts its one-day secret in process memory/environment only. Never commit credentials, tokens, `.env` or tenant state. The preview blocks hidden files, dependency folders and the state file; source downloads under the sample folder are allowed. The tenant script cleans up only its exact core app/SP; advanced branch resources must be removed separately as described in the guide.
+
+The new page derives its visual base and controls from the unchanged PIM lab. If that source style changes, regenerate the checked-in app assets with `node scripts\sync-app-lab-style.mjs`, then `npm test`. The apps lab uses a separate browser-storage key and reports storage failures explicitly. Notes/progress remain browser-local, are exportable, and never perform tenant operations.
 
 ## Original development plan and privacy
 
@@ -55,4 +78,4 @@ gh workflow run pages.yml
 
 Replace `{owner}` with your GitHub login. If Pages already exists, use the repository's **Settings > Pages > Source: GitHub Actions**. The resulting URL is `https://{owner}.github.io/personal_lab/`.
 
-The workflow tests the site and uploads only the public HTML pages and asset directories, never `.private`, scripts, repository metadata or local tools.
+The workflow installs the sample's locked dependencies for its real-library validation, tests the site, and uploads only the public HTML pages and asset directories, including the authored sample source under `labs/`, never `.private`, root tooling scripts, repository metadata or local tools. Public staging explicitly excludes `node_modules`, so dependencies do not enter the Pages artifact.

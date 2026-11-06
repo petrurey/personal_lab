@@ -10,8 +10,13 @@ import { once } from "node:events";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = file => readFile(resolve(root, file), "utf8");
-const resources = ["plans/development-plan.html", "labs/pim-lab.html", "info/entra-roles.html"];
-const categories = ["plans", "labs", "info"];
+const categoryResources = {
+  plans: ["plans/development-plan.html"],
+  labs: ["labs/pim-lab.html", "labs/app-access-lab.html"],
+  info: ["info/entra-roles.html"]
+};
+const categories = Object.keys(categoryResources);
+const resources = Object.values(categoryResources).flat();
 const pages = ["index.html", ...categories.map(category => `${category}/index.html`), ...resources];
 
 test("landing page has compact category headings and isolated scrollable page lists", async () => {
@@ -19,25 +24,27 @@ test("landing page has compact category headings and isolated scrollable page li
   for (const category of categories) assert.ok(html.includes(`href="${category}/"`));
   assert.equal((html.match(/class="category-link"/g) || []).length, 3);
   assert.equal((html.match(/class="category-scroll" role="region" aria-label="[^"]+ pages" tabindex="0"/g) || []).length, 3);
-  for (const [index, category] of categories.entries()) {
+  for (const category of categories) {
     const column = html.match(new RegExp(`<section class="category-column ${category}"[\\s\\S]*?</section>`))?.[0];
     assert.ok(column, `Missing ${category} column`);
-    assert.ok(column.includes(`href="${resources[index]}"`));
-    assert.equal((column.match(/data-resource/g) || []).length, 1);
-    for (const other of resources.filter((_, position) => position !== index)) assert.ok(!column.includes(other));
+    const ownResources = categoryResources[category];
+    for (const file of ownResources) assert.ok(column.includes(`href="${file}"`));
+    assert.equal((column.match(/data-resource/g) || []).length, ownResources.length);
+    for (const other of resources.filter(file => !ownResources.includes(file))) assert.ok(!column.includes(other));
   }
   assert.doesNotMatch(html, /class="hero|workspace-heading|workspace-note|site-footer|Your workspace\.|Choose where|Small steps|A place for what/);
 });
 
 test("category pages contain only their own cards and mark current navigation", async () => {
-  for (const [index, category] of categories.entries()) {
+  for (const category of categories) {
     const html = await read(`${category}/index.html`);
-    assert.equal((html.match(/data-resource /g) || []).length, 1);
-    assert.ok(html.includes(`href="${resources[index].split("/")[1]}"`));
+    const ownResources = categoryResources[category];
+    assert.equal((html.match(/data-resource /g) || []).length, ownResources.length);
+    for (const file of ownResources) assert.ok(html.includes(`href="${file.split("/")[1]}"`));
     assert.ok(html.includes(`href="../${category}/" aria-current="page"`));
     assert.ok(html.includes(`<body class="category-page ${category}">`));
     assert.match(html, /dashboard\.css\?v=4/);
-    for (const other of resources.filter((_, position) => position !== index)) {
+    for (const other of resources.filter(file => !ownResources.includes(file))) {
       assert.ok(!html.includes(other.split("/")[1]), `${category} contains a card from another category`);
     }
   }
@@ -90,6 +97,9 @@ test("hosted plan explains local-only original access without a replacement road
 test("published files exclude internal resources and active credentials", async () => {
   const publicFiles = [...pages, "404.html"];
   for (const name of await readdir(resolve(root, "assets"))) publicFiles.push(`assets/${name}`);
+  for (const name of ["package.json", "package-lock.json", "server.mjs", "authorization.mjs", "server.test.mjs", "tenant.ps1"]) {
+    publicFiles.push(`labs/app-access-sample/${name}`);
+  }
   for (const file of publicFiles) {
     const content = await read(file);
     assert.doesNotMatch(content, /eng\.ms\/|microsoft\.sharepoint\.com|teams\.microsoft\.com\/l\/channel|learningplayer\.microsoft|esxp\.microsoft|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN (?:RSA |OPENSSH )?PRIVATE KEY-----/, file);
@@ -98,7 +108,7 @@ test("published files exclude internal resources and active credentials", async 
 
 test("deployment uses an explicit public-file allowlist", async () => {
   const workflow = await read(".github/workflows/pages.yml");
-  assert.match(workflow, /cp -R assets plans labs info _site\//);
+  assert.match(workflow, /tar -c --exclude=node_modules assets plans labs info \| tar -x -C _site/);
   assert.match(workflow, /path: _site/);
   assert.match(await read(".gitignore"), /^\.private\/$/m);
 });
@@ -129,6 +139,12 @@ test("preview serves the exact original plan only at its designated route and bl
     const url = output.match(/http:\/\/127\.0\.0\.1:\d+/)?.[0];
     assert.ok(url, "Preview must report a usable URL.");
     for (const page of pages) assert.equal((await fetch(`${url}/${page}`)).status, 200, page);
+    for (const [file, type] of [["tenant.ps1", "text/plain"], ["server.mjs", "text/javascript"], ["package-lock.json", "application/json"]]) {
+      const source = await fetch(`${url}/labs/app-access-sample/${file}`);
+      assert.equal(source.status, 200, file);
+      assert.ok(source.headers.get("content-type").startsWith(type), file);
+      assert.equal(await source.text(), await read(`labs/app-access-sample/${file}`));
+    }
     const response = await fetch(`${url}/plans/development-plan.html`);
     assert.deepEqual(Buffer.from(await response.arrayBuffer()), originalBytes);
     assert.equal(response.headers.get("cache-control"), "no-store");
@@ -136,7 +152,7 @@ test("preview serves the exact original plan only at its designated route and bl
     assert.equal(head.status, 200);
     assert.equal(await head.text(), "");
     assert.deepEqual(await readFile(originalPlan), originalBytes);
-    for (const file of [".private/identity-development-plan.html", ".git/config", "package.json", "scripts/import-sources.mjs", "missing.html"]) {
+    for (const file of [".private/identity-development-plan.html", ".git/config", "package.json", "scripts/import-sources.mjs", "missing.html", "labs/app-access-sample/node_modules/openid-client/package.json", "labs/app-access-sample/app-access-lab.json", "labs/app-access-sample/.env"]) {
       assert.equal((await fetch(`${url}/${file}`)).status, 404, file);
     }
     assert.equal(failures.length, 0);

@@ -28,6 +28,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install local capstone test dependencies
+        run: npm ci --prefix labs/app-access-sample
       - name: Validate site
         run: npm test
       - name: Configure GitHub Pages
@@ -36,7 +38,7 @@ jobs:
         run: |
           mkdir _site
           cp index.html 404.html _site/
-          cp -R assets plans labs info _site/
+          tar -c --exclude=node_modules assets plans labs info | tar -x -C _site
           touch _site/.nojekyll
       - name: Upload site
         uses: actions/upload-pages-artifact@v3

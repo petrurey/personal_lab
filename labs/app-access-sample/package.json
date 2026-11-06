@@ -1,0 +1,9 @@
+{
+  "name": "entra-app-access-lab-sample",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node server.mjs", "test": "node --test" },
+  "dependencies": { "openid-client": "^6.8.0" }
+}

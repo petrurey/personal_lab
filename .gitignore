@@ -3,3 +3,5 @@ node_modules/
 playwright-report/
 test-results/
 *.log
+labs/app-access-sample/app-access-lab.json
+.env
