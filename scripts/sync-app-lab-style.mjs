@@ -14,6 +14,6 @@ const appBehavior = behavior
   .replace("'pim-lab-progress.json'", "'app-access-lab-progress.json'")
   .replace("'Microsoft Entra PIM field lab'", "'Microsoft Entra app access field lab'")
   .replace("`${pre.dataset.lang === 'kql' ? 'KQL' : 'PowerShell'} / ${pre.dataset.file}`", "`${pre.dataset.lang || 'PowerShell'} / ${pre.dataset.file}`");
-await writeFile(resolve(root, "assets", "app-lab.css"), css.trim() + "\n.code-bar{flex-wrap:wrap}.code-bar span{overflow-wrap:anywhere;min-width:0}\n");
+await writeFile(resolve(root, "assets", "app-lab.css"), css.trim() + "\n.code-bar{flex-wrap:wrap}.code-bar span{overflow-wrap:anywhere;min-width:0}.configuration>h3:first-child{margin-top:0;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--brand)}.knowledge{background:var(--bg)}.knowledge>summary{color:var(--brand)}.automation>summary{font-size:.85rem}\n");
 await writeFile(resolve(root, "assets", "app-lab.js"), appBehavior + "\n");
 console.log("Apps lab style and controls derived from the unchanged PIM lab.");
